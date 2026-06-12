@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Praga Consorcios</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--gold:#C9A84C;--gold-light:#F0D080;--dark:#0F0F0F;--dark2:#1A1A1A;--dark3:#252525;--dark4:#2E2E2E;--text:#F5F5F0;--text2:#B0AFA8;--text3:#6E6D68;--green:#2ECC71;--red:#E74C3C;--blue:#3498DB;--orange:#E67E22;--r:8px;--rl:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;font-size:14px}
+.login-screen{position:fixed;inset:0;background:var(--dark);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:var(--dark2);border:1px solid #2a2a2a;border-radius:var(--rl);padding:36px;width:100%;max-width:380px}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo-t{font-size:22px;font-weight:700;color:var(--gold);letter-spacing:1px}
+.login-logo-s{font-size:11px;color:var(--text3);margin-top:4px;letter-spacing:2px;text-transform:uppercase}
+.login-tabs{display:flex;gap:2px;background:var(--dark3);padding:4px;border-radius:var(--r);margin-bottom:24px}
+.login-tab{flex:1;text-align:center;padding:8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .15s}
+.login-tab.active{background:var(--dark2);color:var(--text);font-weight:500}
+.login-err{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);color:var(--red);padding:10px 14px;border-radius:var(--r);font-size:13px;margin-bottom:14px;display:none}
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--dark2);border-right:1px solid #2a2a2a;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;overflow-y:auto}
+.logo{padding:20px 16px 16px;border-bottom:1px solid #2a2a2a}
+.logo-t{font-size:15px;font-weight:600;color:var(--gold);letter-spacing:.5px}
+.logo-s{font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:1px;text-transform:uppercase}
+.nav{padding:8px 0;flex:1}
+.ns{padding:12px 16px 4px;font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:var(--text2);transition:all .15s;border-left:2px solid transparent;font-size:13px}
+.ni:hover{background:var(--dark3);color:var(--text)}
+.ni.active{background:var(--dark3);color:var(--gold);border-left-color:var(--gold)}
+.main{margin-left:220px;flex:1}
+.topbar{background:var(--dark2);border-bottom:1px solid #2a2a2a;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.topbar-t{font-size:16px;font-weight:500;display:flex;align-items:center;gap:8px}
+.back-btn{background:transparent;border:1px solid #3a3a3a;color:var(--text2);padding:4px 10px;border-radius:var(--r);cursor:pointer;font-size:12px}
+.topbar-r{display:flex;align-items:center;gap:10px}
+.badge{background:var(--gold);color:var(--dark);font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px}
+.content{padding:24px;max-width:1200px}
+.card{background:var(--dark2);border:1px solid #2a2a2a;border-radius:var(--rl);padding:20px;margin-bottom:16px}
+.ct{font-size:14px;font-weight:500;color:var(--text)}
+.mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.m{background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #2a2a2a}
+.ml{font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.mv{font-size:20px;font-weight:500;color:var(--text)}
+.mv.gold{color:var(--gold)}.mv.red{color:var(--red)}.mv.green{color:var(--green)}.mv.orange{color:var(--orange)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--r);border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}
+.bg{background:var(--gold);color:var(--dark)}.bg:hover{background:var(--gold-light)}
+.bo{background:transparent;color:var(--text2);border:1px solid #3a3a3a}.bo:hover{background:var(--dark3);color:var(--text)}
+.bd{background:transparent;color:var(--red);border:1px solid var(--red)}.bd:hover{background:var(--red);color:white}
+.bs{padding:5px 10px;font-size:12px}
+.bgr{background:var(--green);color:white}.bgr:hover{opacity:.85}
+.bbl{background:var(--blue);color:white}.bbl:hover{opacity:.85}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #2a2a2a;font-weight:500}
+td{padding:10px 12px;border-bottom:1px solid #1e1e1e;color:var(--text2)}
+tr:hover td{background:var(--dark3)}
+td.p{color:var(--text);font-weight:500}
+.pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.pg{background:rgba(46,204,113,.15);color:var(--green)}
+.pr{background:rgba(231,76,60,.15);color:var(--red)}
+.po{background:rgba(230,126,34,.15);color:var(--orange)}
+.pb{background:rgba(52,152,219,.15);color:var(--blue)}
+.pgr{background:rgba(110,109,104,.2);color:var(--text3)}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:12px;color:var(--text3)}
+.fg input,.fg select,.fg textarea{background:var(--dark3);border:1px solid #3a3a3a;border-radius:var(--r);padding:8px 12px;color:var(--text);font-size:13px;outline:none;width:100%}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold)}
+.fg select option{background:var(--dark3)}
+.fr{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:12px}
+.al{border-radius:var(--r);padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;font-size:13px}
+.aw{background:rgba(230,126,34,.1);border:1px solid rgba(230,126,34,.3);color:var(--orange)}
+.ae{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);color:var(--red)}
+.as{background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.3);color:var(--green)}
+.ai{background:rgba(52,152,219,.1);border:1px solid rgba(52,152,219,.3);color:var(--blue)}
+.empty{text-align:center;padding:40px;color:var(--text3)}
+.ri{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1e1e1e}
+.ri:last-child{border-bottom:none}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.mi{background:var(--dark2);border:1px solid #3a3a3a;border-radius:var(--rl);padding:24px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
+.mt{font-size:16px;font-weight:500;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--dark2);border:1px solid var(--gold);color:var(--gold);padding:12px 20px;border-radius:var(--r);z-index:9999;font-size:13px}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid #3a3a3a;border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.tag{display:inline-block;background:var(--dark4);color:var(--text3);font-size:11px;padding:2px 8px;border-radius:4px}
+.tag-ord{background:rgba(52,152,219,.15);color:var(--blue);font-size:11px;padding:2px 8px;border-radius:4px;display:inline-block}
+.tag-ext{background:rgba(231,76,60,.15);color:var(--red);font-size:11px;padding:2px 8px;border-radius:4px;display:inline-block}
+.cons-card{background:var(--dark2);border:1px solid #2a2a2a;border-radius:var(--rl);padding:20px;transition:all .2s}
+.cons-card:hover{border-color:var(--gold);background:var(--dark3)}
+.cons-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.tab-bar{display:flex;gap:2px;margin-bottom:20px;background:var(--dark3);padding:4px;border-radius:var(--r);width:fit-content;flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s}
+.tab.active{background:var(--dark2);color:var(--text);font-weight:500}
+.avatar{width:36px;height:36px;border-radius:50%;background:rgba(201,168,76,.15);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--gold);flex-shrink:0}
+.liq-section{margin-bottom:20px}
+.liq-section-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;padding:8px 12px;border-radius:var(--r);margin-bottom:8px}
+.liq-ord .liq-section-title{background:rgba(52,152,219,.1);color:var(--blue)}
+.liq-ext .liq-section-title{background:rgba(231,76,60,.1);color:var(--red)}
+.liq-ing .liq-section-title{background:rgba(46,204,113,.1);color:var(--green)}
+.liq-row{display:flex;justify-content:space-between;padding:7px 12px;border-bottom:1px solid #1e1e1e;font-size:13px}
+.liq-row:last-child{border-bottom:none}
+.liq-total{display:flex;justify-content:space-between;padding:10px 12px;font-weight:600;font-size:14px;border-top:2px solid #2a2a2a;margin-top:4px}
+.caja-bar{height:8px;border-radius:4px;background:var(--dark3);overflow:hidden;margin-top:6px}
+.caja-fill{height:100%;border-radius:4px;background:var(--green)}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-t">PRAGA</div>
+      <div class="login-logo-s">Administración de Consorcios</div>
+    </div>
+    <div class="login-tabs">
+      <div class="login-tab active" id="lt-admin" onclick="switchLoginTab('admin')">Administrador</div>
+      <div class="login-tab" id="lt-prop" onclick="switchLoginTab('prop')">Propietario</div>
+    </div>
+    <div id="login-admin">
+      <div id="login-err" class="login-err">Usuario o contrasena incorrectos</div>
+      <div class="fg" style="margin-bottom:12px"><label>Usuario</label><input id="l-user" placeholder="Tu usuario" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="fg" style="margin-bottom:20px"><label>Contrasena</label><input id="l-pass" type="password" placeholder="Tu contrasena" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn bg" onclick="doLogin()" style="width:100%;justify-content:center">Ingresar</button>
+    </div>
+    <div id="login-prop" style="display:none">
+      <div id="login-err-prop" class="login-err">Codigo incorrecto</div>
+      <div class="fg" style="margin-bottom:20px"><label>Codigo de acceso</label><input id="l-codigo" placeholder="Ej: ABC123" style="text-transform:uppercase;letter-spacing:3px;font-size:16px;text-align:center" onkeydown="if(event.key==='Enter')doLoginProp()"></div>
+      <button class="btn bg" onclick="doLoginProp()" style="width:100%;justify-content:center">Ver mi cuenta</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="main-app" style="display:none">
+  <aside class="sidebar" id="sidebar">
+    <div class="logo"><div class="logo-t">PRAGA</div><div class="logo-s">Consorcios</div></div>
+    <nav class="nav">
+      <div class="ns">Principal</div>
+      <div class="ni active" onclick="nav('dashboard')">Dashboard</div>
+      <div class="ni" onclick="nav('caja')">Estado de Caja</div>
+      <div class="ns">Gestion</div>
+      <div class="ni" onclick="nav('consorcios')">Consorcios</div>
+      <div class="ni" onclick="nav('gastos')">Gastos</div>
+      <div class="ni" onclick="nav('ingresos')">Ingresos y Deudas</div>
+      <div class="ni" onclick="nav('morosos')">Morosos</div>
+      <div class="ni" onclick="nav('liquidacion')">Liquidacion</div>
+      <div class="ni" onclick="nav('mantenimiento')">Mantenimiento</div>
+      <div class="ni" onclick="nav('recordatorios')">Recordatorios</div>
+      <div class="ns">Comunicacion</div>
+      <div class="ni" onclick="nav('mensajes')">Mensajes <span id="msg-badge" style="display:none;background:var(--red);color:white;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></div>
+      <div class="ni" onclick="nav('comunicaciones')">Comunicaciones</div>
+      <div class="ni" onclick="nav('clientes')">Nuevos Clientes</div>
+      <div class="ni" onclick="nav('configuracion')">Configuracion</div>
+      <div class="ns">Accesos</div>
+      <div class="ni" onclick="nav('portal')">Portal Propietarios</div>
+    </nav>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-t">
+        <span id="back-wrap" style="display:none"><button class="back-btn" onclick="goBack()">Volver</button></span>
+        <span id="pt-text">Dashboard</span>
+      </div>
+      <div class="topbar-r">
+        <span id="dbs" class="pill pgr">Conectando...</span>
+        <span id="ta" style="display:none" class="pill pr"><span id="at"></span></span>
+        <span class="badge" id="user-badge">Admin</span>
+        <button class="btn bo bs" onclick="logout()">Salir</button>
+      </div>
+    </div>
+    <div class="content" id="content"><div class="empty"><span class="spin"></span>Conectando...</div></div>
+  </main>
+</div>
+
+<div id="modal" class="mo" style="display:none" onclick="closeMO(event)"><div class="mi" id="mi"></div></div>
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+var SURL = 'https://ylsakdugmhsddapodlfs.supabase.co';
+var SKEY = 'sb_publishable_q1b1d0XL5KZqH4SXSWrgFQ_FWvt6yQB';
+var ADMINS = {juanchi:'juanchi98', facu:'facu98'};
+var currentUser = null;
+var prevPage = null;
+var currentConsorcioId = null;
+var C = {consorcios:[],propietarios:[],gastos:[],ingresos:[],mantenimiento:[],recordatorios:[],comunicaciones:[],clientes:[],mensajes:[]};
+var CONFIG = {aplicarIntereses:true, tasaInteres:10, diaInteres:10};
+
+function loadConfig(){try{var s=localStorage.getItem('praga_config');if(s)CONFIG=JSON.parse(s);}catch(e){}}
+function saveConfig(){try{localStorage.setItem('praga_config',JSON.stringify(CONFIG));}catch(e){}}
+loadConfig();
+
+function switchLoginTab(tab){
+  document.getElementById('lt-admin').classList.toggle('active',tab==='admin');
+  document.getElementById('lt-prop').classList.toggle('active',tab==='prop');
+  document.getElementById('login-admin').style.display=tab==='admin'?'block':'none';
+  document.getElementById('login-prop').style.display=tab==='prop'?'block':'none';
+}
+
+function doLogin(){
+  var u=document.getElementById('l-user').value.trim().toLowerCase();
+  var p=document.getElementById('l-pass').value;
+  var err=document.getElementById('login-err');
+  if(ADMINS[u]&&ADMINS[u]===p){
+    currentUser={tipo:'admin',nombre:u.charAt(0).toUpperCase()+u.slice(1)};
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='flex';
+    document.getElementById('user-badge').textContent=currentUser.nombre;
+    initDB();
+  } else {
+    err.style.display='block';
+    setTimeout(function(){err.style.display='none';},3000);
+  }
+}
+
+function doLoginProp(){
+  var codigo=document.getElementById('l-codigo').value.trim().toUpperCase();
+  var err=document.getElementById('login-err-prop');
+  sbFetch('propietarios?order=created_at.desc').then(function(ps){
+    C.propietarios=ps||[];
+    var prop=C.propietarios.find(function(p){return p.id.slice(-6).toUpperCase()===codigo;});
+    if(prop){
+      currentUser={tipo:'prop',id:prop.id,nombre:prop.nombre};
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('main-app').style.display='flex';
+      Promise.all([
+        sbFetch('consorcios?order=created_at.desc').then(function(d){C.consorcios=d||[];}),
+        sbFetch('gastos?order=created_at.desc').then(function(d){C.gastos=d||[];}),
+        sbFetch('ingresos?order=created_at.desc').then(function(d){C.ingresos=d||[];}),
+        sbFetch('comunicaciones?order=created_at.desc').then(function(d){C.comunicaciones=d||[];}),
+        sbFetch('mensajes?order=created_at.desc').then(function(d){C.mensajes=d||[];})
+      ]).then(function(){mostrarPortalPropietario(prop.id);});
+    } else {
+      err.style.display='block';
+      setTimeout(function(){err.style.display='none';},3000);
+    }
+  });
+}
+
+function logout(){location.reload();}
+
+function sbFetch(path,opts){
+  opts=opts||{};
+  var url=SURL+'/rest/v1/'+path;
+  var headers={'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'};
+  if(opts.headers)Object.assign(headers,opts.headers);
+  return fetch(url,Object.assign({},opts,{headers:headers})).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    var ct=r.headers.get('content-type');
+    if(ct&&ct.includes('json')&&r.status!==204)return r.json();
+    return null;
+  });
+}
+
+function initDB(){
+  var tabs=Object.keys(C);
+  Promise.all(tabs.map(function(t){return sbFetch(t+'?order=created_at.desc').catch(function(){return[];});}))
+  .then(function(res){
+    tabs.forEach(function(t,i){C[t]=res[i]||[];});
+    document.getElementById('dbs').className='pill pg';
+    document.getElementById('dbs').textContent='Conectado';
+    updateMsgBadge();
+    nav('dashboard');
+  }).catch(function(e){
+    document.getElementById('dbs').className='pill pr';
+    document.getElementById('dbs').textContent='Error';
+    document.getElementById('content').innerHTML='<div class="al ae">Error: '+e.message+' <button class="btn bo bs" onclick="initDB()" style="margin-left:10px">Reintentar</button></div>';
+  });
+}
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function money(n){return '$'+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function today(){return new Date().toISOString().slice(0,10);}
+function mesActual(){return today().slice(0,7);}
+function dom(){return new Date().getDate();}
+
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(function(){t.style.display='none';},2500);}
+function openM(html){document.getElementById('mi').innerHTML=html;document.getElementById('modal').style.display='flex';}
+function closeMO(e){if(e&&e.target!==document.getElementById('modal'))return;document.getElementById('modal').style.display='none';}
+function closeM(){document.getElementById('modal').style.display='none';}
+
+function sortProps(ps){
+  return ps.slice().sort(function(a,b){
+    var ua=(a.piso_dpto||a.unidad||'').trim();
+    var ub=(b.piso_dpto||b.unidad||'').trim();
+    var matchA=ua.match(/\d+/g);
+    var matchB=ub.match(/\d+/g);
+    var na=matchA?parseInt(matchA[0]):9999;
+    var nb=matchB?parseInt(matchB[0]):9999;
+    if(na!==nb)return na-nb;
+    var la=ua.replace(/[^a-zA-Z]/g,'').toLowerCase();
+    var lb=ub.replace(/[^a-zA-Z]/g,'').toLowerCase();
+    return la.localeCompare(lb,'es');
+  });
+}
+
+function calcDebt(pid){
+  var g=0;
+  C.gastos.forEach(function(x){var d=x.distribuciones||{};if(d[pid])g+=Number(d[pid]);});
+  var p=C.ingresos.filter(function(i){return i.propietario_id===pid;}).reduce(function(s,i){return s+Number(i.monto);},0);
+  var s=g-p;if(s<=0)return {total:0,intereses:0,saldo:0};
+  var it=CONFIG.aplicarIntereses&&dom()>=CONFIG.diaInteres?s*(CONFIG.tasaInteres/100):0;
+  return {total:Math.round(s+it),intereses:Math.round(it),saldo:Math.round(s)};
+  var pids=C.propietarios.filter(function(p){return p.consorcio_id===cid;}).map(function(p){return p.id;});
+  var ing=C.ingresos.filter(function(i){return pids.indexOf(i.propietario_id)>=0;}).reduce(function(s,i){return s+Number(i.monto);},0);
+  var gas=C.gastos.filter(function(g){return g.consorcio_id===cid;}).reduce(function(s,g){return s+Number(g.monto);},0);
+  return {ingresos:ing,gastos:gas,saldo:ing-gas};
+}
+
+function calcCajaTotal(){
+  return C.consorcios.reduce(function(acc,c){
+    var cx=calcCaja(c.id);
+    return {ingresos:acc.ingresos+cx.ingresos,gastos:acc.gastos+cx.gastos,saldo:acc.saldo+cx.saldo};
+  },{ingresos:0,gastos:0,saldo:0});
+}
+
+function updateMsgBadge(){
+  var n=C.mensajes.filter(function(m){return !m.leido&&m.de&&m.de.indexOf('admin_')<0;}).length;
+  var b=document.getElementById('msg-badge');
+  if(b){b.style.display=n>0?'inline':'none';b.textContent=n;}
+}
+
+var TITLES={dashboard:'Dashboard',caja:'Estado de Caja',consorcios:'Consorcios',gastos:'Gastos',ingresos:'Ingresos y Deudas',morosos:'Morosos',liquidacion:'Liquidacion',mantenimiento:'Mantenimiento',recordatorios:'Recordatorios',mensajes:'Mensajes',comunicaciones:'Comunicaciones',clientes:'Nuevos Clientes',configuracion:'Configuracion',portal:'Portal Propietarios'};
+
+function nav(page,back){
+  prevPage=back||null;
+  document.querySelectorAll('.ni').forEach(function(n){n.classList.toggle('active',n.getAttribute('onclick')==="nav('"+page+"')");});
+  document.getElementById('pt-text').textContent=TITLES[page]||page;
+  document.getElementById('back-wrap').style.display=back?'inline':'none';
+  var pages={dashboard:pgDashboard,caja:pgCaja,consorcios:pgConsorcios,gastos:pgGastos,ingresos:pgIngresos,morosos:pgMorosos,liquidacion:pgLiquidacion,mantenimiento:pgManto,recordatorios:pgRec,mensajes:pgMensajes,comunicaciones:pgComm,clientes:pgClientes,configuracion:pgConfig,portal:pgPortal};
+  document.getElementById('content').innerHTML=(pages[page]||pgDashboard)();
+  updateAlerts();
+}
+
+function goBack(){if(prevPage)nav(prevPage);}
+
+function updateAlerts(){
+  var mor=C.propietarios.filter(function(p){return calcDebt(p.id).total>0;});
+  var venc=C.recordatorios.filter(function(r){return r.activo&&r.dia===dom();});
+  var msg='';
+  if(mor.length)msg+=mor.length+' moroso(s)';
+  if(venc.length)msg+=(msg?', ':'')+venc.length+' vencimiento(s) hoy';
+  var el=document.getElementById('ta');
+  if(msg){el.style.display='inline-flex';document.getElementById('at').textContent=msg;}
+  else el.style.display='none';
+}
+
+function dbPost(table,obj){
+  return fetch(SURL+'/rest/v1/'+table,{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(obj)});
+}
+function dbPatch(table,id,obj){
+  return fetch(SURL+'/rest/v1/'+table+'?id=eq.'+id,{method:'PATCH',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},body:JSON.stringify(obj)});
+}
+function dbDelete(table,id){
+  return fetch(SURL+'/rest/v1/'+table+'?id=eq.'+id,{method:'DELETE',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
+}
+function dbDeleteWhere(table,field,val){
+  return fetch(SURL+'/rest/v1/'+table+'?'+field+'=eq.'+val,{method:'DELETE',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}});
+}
+
+// ===== DASHBOARD =====
+function pgDashboard(){
+  var caja=calcCajaTotal();
+  var mor=C.propietarios.filter(function(p){return calcDebt(p.id).total>0;});
+  var td=mor.reduce(function(s,p){return s+calcDebt(p.id).total;},0);
+  var vh=C.recordatorios.filter(function(r){return r.activo&&r.dia===dom();});
+  var urg=C.mantenimiento.filter(function(m){return m.prioridad==='alta'&&m.estado!=='finalizado';});
+  var msgsN=C.mensajes.filter(function(m){return !m.leido&&m.de&&m.de.indexOf('prop_')===0;}).length;
+  var cajaCls=caja.saldo>=0?'green':'red';
+  var vHTML=vh.length?vh.map(function(r){return '<div class="ri"><div style="font-size:20px">!</div><div><div style="font-size:13px;color:var(--text)">'+r.nombre+'</div><div style="font-size:11px;color:var(--text3)">Dia '+r.dia+'</div></div></div>';}).join(''):'<div class="empty" style="padding:16px">Sin vencimientos hoy</div>';
+  var mHTML=mor.slice(0,5).map(function(p){var d=calcDebt(p.id);var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});return '<tr><td class="p">'+p.nombre+'</td><td>'+(p.piso_dpto||p.unidad||'-')+'</td><td>'+(c?c.nombre:'-')+'</td><td style="color:var(--red);font-weight:500">'+money(d.total)+'</td></tr>';}).join('');
+  var urgHTML=urg.slice(0,3).map(function(m){var c=C.consorcios.find(function(x){return x.id===m.consorcio_id;});return '<tr><td class="p">'+m.descripcion+'</td><td>'+(c?c.nombre:'-')+'</td><td><span class="pill po">'+m.estado.replace('_',' ')+'</span></td></tr>';}).join('');
+  return '<div class="mg"><div class="m"><div class="ml">Consorcios</div><div class="mv gold">'+C.consorcios.length+'</div></div><div class="m"><div class="ml">Caja total</div><div class="mv '+cajaCls+'">'+money(caja.saldo)+'</div></div><div class="m"><div class="ml">Ingresos</div><div class="mv green">'+money(caja.ingresos)+'</div></div><div class="m"><div class="ml">Gastos</div><div class="mv orange">'+money(caja.gastos)+'</div></div><div class="m"><div class="ml">Morosos</div><div class="mv red">'+mor.length+'</div></div><div class="m"><div class="ml">Deuda total</div><div class="mv red">'+money(td)+'</div></div>'+(msgsN>0?'<div class="m"><div class="ml">Mensajes nuevos</div><div class="mv" style="color:var(--blue)">'+msgsN+'</div></div>':'')+'</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct">Vencimientos hoy</div></div>'+vHTML+'</div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct">Morosos</div><button class="btn bo bs" onclick="nav(\'morosos\')">Ver todos</button></div>'+(mor.length?'<table><thead><tr><th>Propietario</th><th>Unidad</th><th>Consorcio</th><th>Deuda</th></tr></thead><tbody>'+mHTML+'</tbody></table>':'<div class="empty" style="padding:16px">Sin morosos</div>')+'</div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct">Urgentes</div><button class="btn bo bs" onclick="nav(\'mantenimiento\')">Ver todos</button></div>'+(urg.length?'<table><thead><tr><th>Trabajo</th><th>Consorcio</th><th>Estado</th></tr></thead><tbody>'+urgHTML+'</tbody></table>':'<div class="empty" style="padding:16px">Sin urgentes</div>')+'</div></div>';
+}
+
+// ===== CAJA =====
+function pgCaja(){
+  var rows=C.consorcios.map(function(c){
+    var cx=calcCaja(c.id);
+    var pct=cx.ingresos>0?Math.min(100,Math.round(cx.gastos/cx.ingresos*100)):0;
+    var cls=cx.saldo>=0?'green':'red';
+    return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px"><div><div style="font-size:15px;font-weight:500">'+c.nombre+'</div><div style="font-size:12px;color:var(--text3);margin-top:2px">'+(c.direccion||'')+'</div></div><span class="pill '+(cls==='green'?'pg':'pr')+'">'+(cx.saldo>=0?'Superavit':'Deficit')+'</span></div><div class="mg" style="margin-bottom:12px"><div class="m"><div class="ml">Ingresos</div><div class="mv green" style="font-size:16px">'+money(cx.ingresos)+'</div></div><div class="m"><div class="ml">Gastos</div><div class="mv orange" style="font-size:16px">'+money(cx.gastos)+'</div></div><div class="m"><div class="ml">Saldo</div><div class="mv '+cls+'" style="font-size:16px">'+money(cx.saldo)+'</div></div></div><div style="font-size:11px;color:var(--text3);margin-bottom:4px">Gastos vs ingresos: '+pct+'%</div><div class="caja-bar"><div class="caja-fill" style="width:'+pct+'%;background:'+(pct>90?'var(--red)':pct>70?'var(--orange)':'var(--green)')+'"></div></div><div style="display:flex;justify-content:flex-end;margin-top:12px;gap:8px"><button class="btn bo bs" onclick="verConsorcio(\''+c.id+'\')">Ver detalle</button><button class="btn bg bs" onclick="nav(\'liquidacion\')">Liquidacion</button></div></div>';
+  }).join('');
+  var total=calcCajaTotal();
+  return '<div class="mg"><div class="m"><div class="ml">Caja global</div><div class="mv '+(total.saldo>=0?'green':'red')+'">'+money(total.saldo)+'</div></div><div class="m"><div class="ml">Total ingresos</div><div class="mv green">'+money(total.ingresos)+'</div></div><div class="m"><div class="ml">Total gastos</div><div class="mv orange">'+money(total.gastos)+'</div></div></div>'+(C.consorcios.length?rows:'<div class="empty">Sin consorcios</div>');
+}
+
+// ===== LIQUIDACION =====
+function pgLiquidacion(){
+  var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'">'+c.nombre+'</option>';}).join('');
+  return '<div class="card" style="margin-bottom:16px"><div class="ct" style="margin-bottom:14px">Generar liquidacion</div><div class="fr"><div class="fg"><label>Consorcio</label><select id="liq-cons">'+(opts||'<option>Sin consorcios</option>')+'</select></div><div class="fg"><label>Periodo</label><input type="month" id="liq-mes" value="'+mesActual()+'"></div></div><button class="btn bg" onclick="generarLiquidacion()">Generar</button></div><div id="liq-result"></div>';
+}
+
+function generarLiquidacion(){
+  var cid=document.getElementById('liq-cons').value;
+  var mes=document.getElementById('liq-mes').value;
+  if(!cid||!mes)return toast('Selecciona consorcio y periodo');
+  var cons=C.consorcios.find(function(x){return x.id===cid;});
+  var ps=sortProps(C.propietarios.filter(function(p){return p.consorcio_id===cid;}));
+  var pids=ps.map(function(p){return p.id;});
+  var gastosM=C.gastos.filter(function(g){return g.consorcio_id===cid&&g.fecha&&g.fecha.slice(0,7)===mes;});
+  var gastosOrd=gastosM.filter(function(g){return g.tipo_gasto!=='extraordinario';});
+  var gastosExt=gastosM.filter(function(g){return g.tipo_gasto==='extraordinario';});
+  var totalOrd=gastosOrd.reduce(function(s,g){return s+Number(g.monto);},0);
+  var totalExt=gastosExt.reduce(function(s,g){return s+Number(g.monto);},0);
+  var ingresosM=C.ingresos.filter(function(i){return pids.indexOf(i.propietario_id)>=0&&i.fecha&&i.fecha.slice(0,7)===mes;});
+  var totalIng=ingresosM.reduce(function(s,i){return s+Number(i.monto);},0);
+  var saldo=totalIng-(totalOrd+totalExt);
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var partes=mes.split('-');
+  var mesLabel=meses[parseInt(partes[1])-1]+' '+partes[0];
+  var deudaRows=ps.map(function(p){
+    var d=calcDebt(p.id);
+    var pagosM=ingresosM.filter(function(i){return i.propietario_id===p.id;}).reduce(function(s,i){return s+Number(i.monto);},0);
+    var gastoProp=gastosM.reduce(function(s,g){var dist=g.distribuciones||{};return s+(dist[p.id]||0);},0);
+    return '<tr><td class="p">'+p.nombre+'</td><td>'+(p.piso_dpto||p.unidad||'-')+'</td><td>'+(p.alquilado?'Alquilado':'Propio')+'</td><td>'+money(gastoProp)+'</td><td style="color:var(--green)">'+money(pagosM)+'</td><td style="color:'+(d.total>0?'var(--red)':'var(--green)')+';font-weight:500">'+money(d.total)+'</td></tr>';
+  }).join('');
+  var gOrdHTML=gastosOrd.map(function(g){return '<div class="liq-row"><span>'+g.descripcion+(g.proveedor?' - '+g.proveedor:'')+'</span><span style="color:var(--blue)">'+money(g.monto)+'</span></div>';}).join('');
+  var gExtHTML=gastosExt.map(function(g){return '<div class="liq-row"><span>'+g.descripcion+(g.proveedor?' - '+g.proveedor:'')+'</span><span style="color:var(--red)">'+money(g.monto)+'</span></div>';}).join('');
+  var ingHTML=ingresosM.map(function(i){var p=C.propietarios.find(function(x){return x.id===i.propietario_id;});return '<div class="liq-row"><span>'+(p?p.nombre+' ('+( p.piso_dpto||p.unidad||'-')+')':'-')+(i.pagado_por&&i.pagado_por!=='Propietario'?' - pago '+i.pagado_por:'')+'</span><span style="color:var(--green)">'+money(i.monto)+'</span></div>';}).join('');
+  document.getElementById('liq-result').innerHTML='<div class="card"><div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #2a2a2a"><div style="font-size:18px;font-weight:600;color:var(--gold)">PRAGA Administracion de Consorcios</div><div style="font-size:14px;font-weight:500;margin-top:6px">Liquidacion de Expensas - '+mesLabel+'</div><div style="font-size:13px;color:var(--text3);margin-top:4px">'+cons.nombre+' - '+(cons.direccion||'')+'</div></div><div class="mg" style="margin-bottom:20px"><div class="m"><div class="ml">Ingresos</div><div class="mv green">'+money(totalIng)+'</div></div><div class="m"><div class="ml">Ordinarios</div><div class="mv" style="color:var(--blue)">'+money(totalOrd)+'</div></div><div class="m"><div class="ml">Extraordinarios</div><div class="mv red">'+money(totalExt)+'</div></div><div class="m"><div class="ml">Saldo</div><div class="mv '+(saldo>=0?'green':'red')+'">'+money(saldo)+'</div></div></div><div class="liq-section liq-ing"><div class="liq-section-title">Ingresos del periodo</div>'+(ingHTML||'<div style="color:var(--text3);font-size:13px;padding:8px 12px">Sin ingresos</div>')+'<div class="liq-total"><span>Total ingresos</span><span style="color:var(--green)">'+money(totalIng)+'</span></div></div><div class="liq-section liq-ord"><div class="liq-section-title">Gastos ordinarios (inquilino)</div><div style="font-size:11px;color:var(--text3);padding:0 12px 8px">Limpieza, servicios, administracion - Ley 13.512 / CCCN Art. 2048</div>'+(gOrdHTML||'<div style="color:var(--text3);font-size:13px;padding:8px 12px">Sin gastos ordinarios</div>')+'<div class="liq-total"><span>Total ordinarios</span><span style="color:var(--blue)">'+money(totalOrd)+'</span></div></div><div class="liq-section liq-ext"><div class="liq-section-title">Gastos extraordinarios (propietario)</div><div style="font-size:11px;color:var(--text3);padding:0 12px 8px">Reparaciones mayores, mejoras, fondo de reserva - CCCN Art. 2048</div>'+(gExtHTML||'<div style="color:var(--text3);font-size:13px;padding:8px 12px">Sin gastos extraordinarios</div>')+'<div class="liq-total"><span>Total extraordinarios</span><span style="color:var(--red)">'+money(totalExt)+'</span></div></div><div style="background:var(--dark3);border-radius:var(--r);padding:16px;margin:16px 0"><div style="font-size:13px;font-weight:600;margin-bottom:12px">Estado por unidad funcional</div><div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Tipo</th><th>Gasto asignado</th><th>Pago</th><th>Deuda total</th></tr></thead><tbody>'+(deudaRows||'<tr><td colspan="6" style="text-align:center;color:var(--text3)">Sin propietarios</td></tr>')+'</tbody></table></div></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px"><button class="btn bg" onclick="window.print()">Imprimir</button></div></div>';
+}
+
+// ===== CONSORCIOS =====
+function pgConsorcios(){
+  var cards=C.consorcios.map(function(c){
+    var ps=C.propietarios.filter(function(p){return p.consorcio_id===c.id;});
+    var mor=ps.filter(function(p){return calcDebt(p.id).total>0;});
+    var urg=C.mantenimiento.filter(function(m){return m.consorcio_id===c.id&&m.prioridad==='alta'&&m.estado!=='finalizado';});
+    var cx=calcCaja(c.id);
+    return '<div class="cons-card"><div style="display:flex;justify-content:space-between;margin-bottom:12px;cursor:pointer" onclick="verConsorcio(\''+c.id+'\')"><div><div style="font-size:15px;font-weight:500">'+c.nombre+'</div><div style="font-size:12px;color:var(--text3);margin-top:2px">'+(c.direccion||'Sin direccion')+'</div></div><span style="font-size:20px;color:var(--gold)">)</span></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><span class="pill pb">'+ps.length+' unidades</span>'+(mor.length>0?'<span class="pill pr">'+mor.length+' morosos</span>':'<span class="pill pg">Al dia</span>')+(urg.length>0?'<span class="pill po">'+urg.length+' urgentes</span>':'')+'</div><div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px"><div style="font-size:12px;color:var(--text3)">Caja: <span style="color:'+(cx.saldo>=0?'var(--green)':'var(--red)')+';font-weight:500">'+money(cx.saldo)+'</span></div><div style="display:flex;gap:6px"><button class="btn bo bs" onclick="verConsorcio(\''+c.id+'\')">Ver</button><button class="btn bo bs" onclick="mEditCons(\''+c.id+'\',event)">Editar</button><button class="btn bd bs" onclick="delCons(\''+c.id+'\',event)">Eliminar</button></div></div></div>';
+  }).join('');
+  return '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:20px"><button class="btn bo" onclick="mAddProp(null)">+ Propietario</button><button class="btn bg" onclick="mAddCons()">+ Nuevo consorcio</button></div>'+(C.consorcios.length?'<div class="cons-grid">'+cards+'</div>':'<div class="empty" style="margin-top:40px">Sin consorcios</div>');
+}
+
+function verConsorcio(cid){
+  currentConsorcioId=cid;
+  var c=C.consorcios.find(function(x){return x.id===cid;});
+  document.getElementById('pt-text').textContent=c.nombre;
+  document.getElementById('back-wrap').style.display='inline';
+  prevPage='consorcios';
+  document.getElementById('content').innerHTML=renderCons(cid,'resumen');
+}
+
+function renderCons(cid,tab){
+  var tabs=['resumen','unidades','gastos','mantenimiento','comunicaciones'];
+  var labels={resumen:'Resumen',unidades:'Unidades',gastos:'Gastos',mantenimiento:'Mantenimiento',comunicaciones:'Comunicaciones'};
+  var tabBar='<div class="tab-bar">'+tabs.map(function(t){return '<div class="tab'+(t===tab?' active':'')+'" onclick="switchTab(\''+cid+'\',\''+t+'\')">'+labels[t]+'</div>';}).join('')+'</div>';
+  var body='';
+  if(tab==='resumen')body=tabResumen(cid);
+  else if(tab==='unidades')body=tabUnidades(cid);
+  else if(tab==='gastos')body=tabGastosCons(cid);
+  else if(tab==='mantenimiento')body=tabMantoCons(cid);
+  else if(tab==='comunicaciones')body=tabCommCons(cid);
+  return tabBar+body;
+}
+
+function switchTab(cid,tab){document.getElementById('content').innerHTML=renderCons(cid,tab);}
+
+function tabResumen(cid){
+  var mes=mesActual();
+  var ps=C.propietarios.filter(function(p){return p.consorcio_id===cid;});
+  var pids=ps.map(function(p){return p.id;});
+  var gs=C.gastos.filter(function(g){return g.consorcio_id===cid&&g.fecha&&g.fecha.slice(0,7)===mes;});
+  var totalG=gs.reduce(function(s,g){return s+Number(g.monto);},0);
+  var ingM=C.ingresos.filter(function(i){return pids.indexOf(i.propietario_id)>=0&&i.fecha&&i.fecha.slice(0,7)===mes;}).reduce(function(s,i){return s+Number(i.monto);},0);
+  var cx=calcCaja(cid);
+  var mor=ps.filter(function(p){return calcDebt(p.id).total>0;});
+  var urg=C.mantenimiento.filter(function(m){return m.consorcio_id===cid&&m.prioridad==='alta'&&m.estado!=='finalizado';});
+  var urgHTML=urg.map(function(m){return '<div class="ri"><div style="font-size:18px">!</div><div style="flex:1"><div style="font-size:13px;color:var(--text)">'+m.descripcion+'</div></div><span class="pill pr">Alta</span></div>';}).join('');
+  return '<div class="mg"><div class="m"><div class="ml">Caja total</div><div class="mv '+(cx.saldo>=0?'green':'red')+'">'+money(cx.saldo)+'</div></div><div class="m"><div class="ml">Ingresos mes</div><div class="mv green">'+money(ingM)+'</div></div><div class="m"><div class="ml">Gastos mes</div><div class="mv orange">'+money(totalG)+'</div></div><div class="m"><div class="ml">Unidades</div><div class="mv gold">'+ps.length+'</div></div><div class="m"><div class="ml">Morosos</div><div class="mv red">'+mor.length+'</div></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px"><div class="card"><div class="ct" style="margin-bottom:14px">Urgentes</div>'+(urg.length?urgHTML:'<div class="empty" style="padding:16px">Sin urgentes</div>')+'</div><div class="card"><div class="ct" style="margin-bottom:14px">Gastos del mes</div>'+(gs.length?'<table><thead><tr><th>Descripcion</th><th>Tipo</th><th>Monto</th></tr></thead><tbody>'+gs.slice(0,5).map(function(g){return '<tr><td class="p">'+g.descripcion+'</td><td>'+(g.tipo_gasto==='extraordinario'?'<span class="tag-ext">Extraord.</span>':'<span class="tag-ord">Ordinario</span>')+'</td><td style="color:var(--gold)">'+money(g.monto)+'</td></tr>';}).join('')+'</tbody></table>':'<div class="empty" style="padding:16px">Sin gastos</div>')+'</div></div>';
+}
+
+function tabUnidades(cid){
+  var ps=sortProps(C.propietarios.filter(function(p){return p.consorcio_id===cid;}));
+  var rows=ps.map(function(p){
+    var d=calcDebt(p.id);
+    var ult=C.ingresos.filter(function(i){return i.propietario_id===p.id;}).sort(function(a,b){return b.fecha>a.fecha?1:-1;})[0];
+    var inquilinoInfo=p.alquilado?('Alquilado - '+(p.inquilino||'')+(p.inquilino_tel?' ('+p.inquilino_tel+')':'')):'Propio';
+    return '<tr><td class="p">'+(p.piso_dpto||p.unidad||'-')+'</td><td><div style="display:flex;align-items:center;gap:8px"><div class="avatar">'+p.nombre.slice(0,2).toUpperCase()+'</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">'+p.nombre+'</div><div style="font-size:11px;color:var(--text3)">'+(p.email||'')+'</div></div></div></td><td><span class="pill '+(p.alquilado?'po':'pg')+'">'+(p.alquilado?'Alquilado':'Propio')+'</span>'+(p.alquilado?'<div style="font-size:11px;color:var(--text3);margin-top:3px">'+(p.inquilino||'')+(p.inquilino_tel?' | '+p.inquilino_tel:'')+'</div>':'')+'</td><td>'+(p.telefono||'-')+'</td><td>'+(p.pct?p.pct+'%':'-')+'</td><td style="color:'+(d.total>0?'var(--red)':'var(--green)')+';font-weight:500">'+money(d.total)+'</td><td>'+(ult?ult.fecha:'-')+'</td><td><button class="btn bgr bs" onclick="mPago(\''+p.id+'\')">Pago</button> <button class="btn bo bs" onclick="mEditProp(\''+p.id+'\')">Editar</button> <button class="btn bd bs" onclick="delP(\''+p.id+'\',\''+cid+'\')">X</button></td></tr>';
+  }).join('');
+  return '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn bg" onclick="mAddProp(\''+cid+'\')">+ Agregar unidad</button></div>'+(ps.length?'<div style="overflow-x:auto"><table><thead><tr><th>Unidad</th><th>Propietario</th><th>Estado</th><th>Tel. propietario</th><th>%</th><th>Deuda</th><th>Ultimo pago</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin unidades</div>');
+}
+
+function tabGastosCons(cid){
+  var gs=C.gastos.filter(function(g){return g.consorcio_id===cid;});
+  var rows=gs.map(function(g){return '<tr><td class="p">'+g.descripcion+'</td><td>'+(g.tipo_gasto==='extraordinario'?'<span class="tag-ext">Extraordinario</span>':'<span class="tag-ord">Ordinario</span>')+'</td><td><span class="tag">'+(g.categoria||'-')+'</span></td><td style="color:var(--gold);font-weight:500">'+money(g.monto)+'</td><td>'+(g.fecha||'-')+'</td><td>'+(g.proveedor||'-')+'</td><td><button class="btn bd bs" onclick="delGCons(\''+g.id+'\',\''+cid+'\')">X</button></td></tr>';}).join('');
+  return '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn bg" onclick="mAddGasto(\''+cid+'\')">+ Nuevo gasto</button></div>'+(gs.length?'<div style="overflow-x:auto"><table><thead><tr><th>Descripcion</th><th>Tipo</th><th>Categoria</th><th>Monto</th><th>Fecha</th><th>Proveedor</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin gastos</div>');
+}
+
+function tabMantoCons(cid){
+  var ms=C.mantenimiento.filter(function(m){return m.consorcio_id===cid;});
+  var sc={pendiente:'po',en_curso:'pb',finalizado:'pg',cancelado:'pgr'};
+  var pc={alta:'pr',media:'po',baja:'pgr'};
+  var rows=ms.map(function(m){return '<tr><td class="p">'+m.descripcion+'</td><td>'+(m.tipo||'-')+'</td><td>'+(m.proveedor||'-')+'</td><td>'+(m.fecha_inicio||'-')+'</td><td>'+money(m.costo||0)+'</td><td><span class="pill '+(pc[m.prioridad]||'pgr')+'">'+(m.prioridad||'-')+'</span></td><td><span class="pill '+(sc[m.estado]||'pgr')+'">'+m.estado.replace('_',' ')+'</span></td><td><button class="btn bo bs" onclick="nextEstadoCons(\''+m.id+'\',\''+m.estado+'\',\''+cid+'\')">></button> <button class="btn bd bs" onclick="delMCons(\''+m.id+'\',\''+cid+'\')">X</button></td></tr>';}).join('');
+  return '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn bg" onclick="mAddManto(\''+cid+'\')">+ Nuevo trabajo</button></div>'+(ms.length?'<div style="overflow-x:auto"><table><thead><tr><th>Descripcion</th><th>Tipo</th><th>Proveedor</th><th>Inicio</th><th>Costo</th><th>Prioridad</th><th>Estado</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin trabajos</div>');
+}
+
+function tabCommCons(cid){
+  var cs=C.comunicaciones.filter(function(c){return !c.consorcio_id||c.consorcio_id===cid;});
+  var tc={aviso:'pb',urgente:'pr',reunion:'po',circular:'pgr'};
+  return cs.map(function(c){return '<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="display:flex;align-items:center;gap:8px"><span class="pill '+(tc[c.tipo]||'pgr')+'">'+c.tipo+'</span><span style="font-size:13px;font-weight:500">'+c.titulo+'</span></div><span style="font-size:11px;color:var(--text3)">'+(c.fecha||'-')+'</span></div><div style="font-size:13px;color:var(--text2)">'+c.cuerpo+'</div></div>';}).join('')||'<div class="empty">Sin comunicaciones</div>';
+}
+
+// ===== MODALES CONSORCIOS =====
+function mAddCons(){
+  openM('<div class="mt">Nuevo Consorcio <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Nombre</label><input id="cn" placeholder="Edificio Central"></div><div class="fg"><label>Direccion</label><input id="cd"></div></div><div class="fr"><div class="fg"><label>Encargado</label><input id="ce"></div><div class="fg"><label>Unidades</label><input id="cu" type="number"></div></div><div class="fg" style="margin-bottom:16px"><label>Notas</label><textarea id="cno" rows="2"></textarea></div><button class="btn bg" onclick="saveCons()" style="width:100%">Guardar</button>');
+}
+
+function saveCons(){
+  var n=document.getElementById('cn').value.trim();
+  if(!n)return toast('Ingresa el nombre');
+  var o={id:uid(),nombre:n,direccion:document.getElementById('cd').value||'',encargado:document.getElementById('ce').value||'',unidades:document.getElementById('cu').value||'',notas:document.getElementById('cno').value||''};
+  dbPost('consorcios',o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    C.consorcios.unshift(o);closeM();nav('consorcios');toast('Consorcio agregado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function mEditCons(id,e){
+  e.stopPropagation();
+  var c=C.consorcios.find(function(x){return x.id===id;});
+  openM('<div class="mt">Editar Consorcio <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Nombre</label><input id="cn" value="'+c.nombre+'"></div><div class="fg"><label>Direccion</label><input id="cd" value="'+(c.direccion||'')+'"></div></div><div class="fr"><div class="fg"><label>Encargado</label><input id="ce" value="'+(c.encargado||'')+'"></div><div class="fg"><label>Unidades</label><input id="cu" type="number" value="'+(c.unidades||'')+'"></div></div><div class="fg" style="margin-bottom:16px"><label>Notas</label><textarea id="cno" rows="2">'+(c.notas||'')+'</textarea></div><button class="btn bg" onclick="updateCons(\''+id+'\')" style="width:100%">Guardar cambios</button>');
+}
+
+function updateCons(id){
+  var n=document.getElementById('cn').value.trim();if(!n)return toast('Ingresa el nombre');
+  var o={nombre:n,direccion:document.getElementById('cd').value,encargado:document.getElementById('ce').value,unidades:document.getElementById('cu').value,notas:document.getElementById('cno').value};
+  dbPatch('consorcios',id,o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    var c=C.consorcios.find(function(x){return x.id===id;});if(c)Object.assign(c,o);
+    closeM();nav('consorcios');toast('Actualizado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function delCons(id,e){
+  e.stopPropagation();
+  if(!confirm('Eliminar este consorcio y todos sus datos?'))return;
+  Promise.all([dbDeleteWhere('propietarios','consorcio_id',id),dbDeleteWhere('gastos','consorcio_id',id),dbDelete('consorcios',id)])
+  .then(function(){
+    C.consorcios=C.consorcios.filter(function(c){return c.id!==id;});
+    C.propietarios=C.propietarios.filter(function(p){return p.consorcio_id!==id;});
+    C.gastos=C.gastos.filter(function(g){return g.consorcio_id!==id;});
+    nav('consorcios');toast('Eliminado');
+  }).catch(function(){toast('Error');});
+}
+
+function mAddProp(cid){
+  var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'"'+(cid&&c.id===cid?' selected':'')+'>'+c.nombre+'</option>';}).join('');
+  if(!opts)return toast('Primero crea un consorcio');
+  openM('<div class="mt">Nueva Unidad <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Nombre del propietario</label><input id="pn" placeholder="Juan Garcia"></div><div class="fg"><label>Consorcio</label><select id="pc">'+opts+'</select></div></div><div class="fr"><div class="fg"><label>Piso y departamento</label><input id="ppd" placeholder="1 A"></div><div class="fg"><label>Telefono propietario</label><input id="pt2" placeholder="264..."></div></div><div class="fr"><div class="fg"><label>Email</label><input id="pe"></div><div class="fg"><label>% de expensas</label><input id="pp" type="number" step="0.01" placeholder="8.33"></div></div><div class="fr"><div class="fg"><label>Estado</label><select id="palq"><option value="0">Ocupada por propietario</option><option value="1">Alquilada</option></select></div><div class="fg"><label>Nombre del inquilino</label><input id="pinq" placeholder="Maria Lopez"></div></div><div class="fr"><div class="fg"><label>Telefono del inquilino</label><input id="pinqtel" placeholder="264..."></div></div><input type="hidden" id="p-back" value="'+(cid||'')+'"><button class="btn bg" onclick="saveProp()" style="width:100%;margin-top:8px">Guardar</button>');
+}
+
+function saveProp(){
+  var n=document.getElementById('pn').value.trim();if(!n)return toast('Ingresa el nombre');
+  var back=document.getElementById('p-back').value;
+  var pd=document.getElementById('ppd').value;
+  var o={id:uid(),nombre:n,consorcio_id:document.getElementById('pc').value,piso_dpto:pd,unidad:pd,telefono:document.getElementById('pt2').value,email:document.getElementById('pe').value,pct:parseFloat(document.getElementById('pp').value)||0,alquilado:document.getElementById('palq').value==='1',inquilino:document.getElementById('pinq').value,inquilino_tel:document.getElementById('pinqtel').value};
+  dbPost('propietarios',o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    C.propietarios.unshift(o);closeM();
+    if(back)document.getElementById('content').innerHTML=renderCons(back,'unidades');
+    else nav('consorcios');
+    toast('Unidad agregada');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function mEditProp(pid){
+  var p=C.propietarios.find(function(x){return x.id===pid;});
+  var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'"'+(c.id===p.consorcio_id?' selected':'')+'>'+c.nombre+'</option>';}).join('');
+  openM('<div class="mt">Editar Unidad <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Nombre</label><input id="pn" value="'+p.nombre+'"></div><div class="fg"><label>Consorcio</label><select id="pc">'+opts+'</select></div></div><div class="fr"><div class="fg"><label>Piso y dpto</label><input id="ppd" value="'+(p.piso_dpto||p.unidad||'')+'"></div><div class="fg"><label>Telefono propietario</label><input id="pt2" value="'+(p.telefono||'')+'"></div></div><div class="fr"><div class="fg"><label>Email</label><input id="pe" value="'+(p.email||'')+'"></div><div class="fg"><label>% expensas</label><input id="pp" type="number" step="0.01" value="'+(p.pct||0)+'"></div></div><div class="fr"><div class="fg"><label>Estado</label><select id="palq"><option value="0"'+(!p.alquilado?' selected':'')+'>Ocupada por propietario</option><option value="1"'+(p.alquilado?' selected':'')+'>Alquilada</option></select></div><div class="fg"><label>Nombre inquilino</label><input id="pinq" value="'+(p.inquilino||'')+'"></div></div><div class="fr"><div class="fg"><label>Telefono inquilino</label><input id="pinqtel" value="'+(p.inquilino_tel||'')+'"></div></div><button class="btn bg" onclick="updateProp(\''+pid+'\')" style="width:100%;margin-top:8px">Guardar cambios</button>');
+}
+
+function updateProp(pid){
+  var pd=document.getElementById('ppd').value;
+  var o={nombre:document.getElementById('pn').value.trim(),consorcio_id:document.getElementById('pc').value,piso_dpto:pd,unidad:pd,telefono:document.getElementById('pt2').value,email:document.getElementById('pe').value,pct:parseFloat(document.getElementById('pp').value)||0,alquilado:document.getElementById('palq').value==='1',inquilino:document.getElementById('pinq').value,inquilino_tel:document.getElementById('pinqtel').value};
+  dbPatch('propietarios',pid,o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    var p=C.propietarios.find(function(x){return x.id===pid;});if(p)Object.assign(p,o);
+    closeM();
+    if(currentConsorcioId)document.getElementById('content').innerHTML=renderCons(currentConsorcioId,'unidades');
+    toast('Actualizado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function delP(pid,cid){
+  if(!confirm('Eliminar propietario?'))return;
+  dbDelete('propietarios',pid).then(function(){
+    C.propietarios=C.propietarios.filter(function(p){return p.id!==pid;});
+    if(cid)document.getElementById('content').innerHTML=renderCons(cid,'unidades');
+    toast('Eliminado');
+  }).catch(function(){toast('Error');});
+}
+
+function delGCons(id,cid){
+  if(!confirm('Eliminar?'))return;
+  dbDelete('gastos',id).then(function(){
+    C.gastos=C.gastos.filter(function(g){return g.id!==id;});
+    document.getElementById('content').innerHTML=renderCons(cid,'gastos');
+  }).catch(function(){toast('Error');});
+}
+
+function nextEstadoCons(id,est,cid){
+  var es=['pendiente','en_curso','finalizado','cancelado'];
+  var nx=es[(es.indexOf(est)+1)%es.length];
+  dbPatch('mantenimiento',id,{estado:nx}).then(function(){
+    var m=C.mantenimiento.find(function(x){return x.id===id;});if(m)m.estado=nx;
+    document.getElementById('content').innerHTML=renderCons(cid,'mantenimiento');
+  }).catch(function(){toast('Error');});
+}
+
+function delMCons(id,cid){
+  if(!confirm('Eliminar?'))return;
+  dbDelete('mantenimiento',id).then(function(){
+    C.mantenimiento=C.mantenimiento.filter(function(m){return m.id!==id;});
+    document.getElementById('content').innerHTML=renderCons(cid,'mantenimiento');
+  }).catch(function(){toast('Error');});
+}
+
+// ===== GASTOS =====
+function pgGastos(){
+  var rows=C.gastos.map(function(g){
+    var c=C.consorcios.find(function(x){return x.id===g.consorcio_id;});
+    var np=g.distribuciones?Object.keys(g.distribuciones).length:0;
+    return '<tr><td class="p">'+g.descripcion+'</td><td>'+(c?c.nombre:'-')+'</td><td>'+(g.tipo_gasto==='extraordinario'?'<span class="tag-ext">Extraordinario</span>':'<span class="tag-ord">Ordinario</span>')+'</td><td><span class="tag">'+(g.categoria||'-')+'</span></td><td style="color:var(--gold);font-weight:500">'+money(g.monto)+'</td><td>'+(g.fecha||'-')+'</td><td>'+(g.proveedor||'-')+'</td><td>'+(np>0?'<span class="pill pb">'+np+' prop.</span>':'<span class="pill pgr">Sin dist.</span>')+'</td><td><button class="btn bo bs" onclick="mEditGasto(\''+g.id+'\')">Editar</button> <button class="btn bd bs" onclick="delGlobal(\''+g.id+'\')">X</button></td></tr>';
+  }).join('');
+  return '<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="btn bg" onclick="mAddGasto(null)">+ Nuevo gasto</button></div><div class="card">'+(C.gastos.length?'<div style="overflow-x:auto"><table><thead><tr><th>Descripcion</th><th>Consorcio</th><th>Tipo</th><th>Categoria</th><th>Monto</th><th>Fecha</th><th>Proveedor</th><th>Dist.</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin gastos</div>')+'</div>';
+}
+
+function mEditGasto(id){
+  var g=C.gastos.find(function(x){return x.id===id;});
+  var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'"'+(c.id===g.consorcio_id?' selected':'')+'>'+c.nombre+'</option>';}).join('');
+  openM('<div class="mt">Editar Gasto <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Descripcion</label><input id="gd" value="'+g.descripcion+'"></div><div class="fg"><label>Consorcio</label><select id="gc">'+opts+'</select></div></div><div class="fr"><div class="fg"><label>Monto ($)</label><input id="gm" type="number" value="'+g.monto+'"></div><div class="fg"><label>Fecha</label><input id="gf" type="date" value="'+(g.fecha||'')+'"></div></div><div class="fr"><div class="fg"><label>Tipo</label><select id="gtipo"><option value="ordinario"'+(g.tipo_gasto!=='extraordinario'?' selected':'')+'>Ordinario</option><option value="extraordinario"'+(g.tipo_gasto==='extraordinario'?' selected':'')+'>Extraordinario</option></select></div></div><div class="fr"><div class="fg"><label>Categoria</label><select id="gcat"><option'+(g.categoria==='Electricidad'?' selected':'')+'>Electricidad</option><option'+(g.categoria==='Limpieza'?' selected':'')+'>Limpieza</option><option'+(g.categoria==='Mantenimiento'?' selected':'')+'>Mantenimiento</option><option'+(g.categoria==='Ascensor'?' selected':'')+'>Ascensor</option><option'+(g.categoria==='Seguro'?' selected':'')+'>Seguro</option><option'+(g.categoria==='Agua'?' selected':'')+'>Agua</option><option'+(g.categoria==='Gas'?' selected':'')+'>Gas</option><option'+(g.categoria==='Administracion'?' selected':'')+'>Administracion</option><option'+(g.categoria==='Reparacion'?' selected':'')+'>Reparacion</option><option'+(g.categoria==='Fondo de reserva'?' selected':'')+'>Fondo de reserva</option><option'+(g.categoria==='Otro'?' selected':'')+'>Otro</option></select></div><div class="fg"><label>Proveedor</label><input id="gprov" value="'+(g.proveedor||'')+'"></div></div><button class="btn bg" onclick="updateGasto(\''+id+'\')" style="width:100%;margin-top:8px">Guardar cambios</button>');
+}
+
+function updateGasto(id){
+  var o={descripcion:document.getElementById('gd').value.trim(),consorcio_id:document.getElementById('gc').value,monto:parseFloat(document.getElementById('gm').value),fecha:document.getElementById('gf').value,tipo_gasto:document.getElementById('gtipo').value,categoria:document.getElementById('gcat').value,proveedor:document.getElementById('gprov').value};
+  dbPatch('gastos',id,o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    var g=C.gastos.find(function(x){return x.id===id;});if(g)Object.assign(g,o);
+    closeM();nav('gastos');toast('Gasto actualizado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function delGlobal(id){
+  if(!confirm('Eliminar?'))return;
+  dbDelete('gastos',id).then(function(){C.gastos=C.gastos.filter(function(g){return g.id!==id;});nav('gastos');}).catch(function(){toast('Error');});
+}
+
+function mAddGasto(cid){
+  var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'"'+(cid&&c.id===cid?' selected':'')+'>'+c.nombre+'</option>';}).join('');
+  if(!opts)return toast('Primero crea un consorcio');
+  openM('<div class="mt">Nuevo Gasto <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Descripcion</label><input id="gd" placeholder="Pago electricidad"></div><div class="fg"><label>Consorcio</label><select id="gc" onchange="updDist()">'+opts+'</select></div></div><div class="fr"><div class="fg"><label>Monto ($)</label><input id="gm" type="number" oninput="updDist()"></div><div class="fg"><label>Fecha</label><input id="gf" type="date" value="'+today()+'"></div></div><div class="fr"><div class="fg"><label>Tipo de gasto</label><select id="gtipo"><option value="ordinario">Ordinario (inquilino)</option><option value="extraordinario">Extraordinario (propietario)</option></select></div></div><div class="fr"><div class="fg"><label>Categoria</label><select id="gcat"><option>Electricidad</option><option>Limpieza</option><option>Mantenimiento</option><option>Ascensor</option><option>Seguro</option><option>Agua</option><option>Gas</option><option>Administracion</option><option>Reparacion</option><option>Fondo de reserva</option><option>Otro</option></select></div><div class="fg"><label>Proveedor</label><input id="gprov"></div></div><div class="fg" style="margin-bottom:8px"><label>Distribucion</label><select id="gdt" onchange="updDist()"><option value="igual">Partes iguales</option><option value="pct">Por porcentaje</option><option value="manual">Manual</option></select></div><div id="dc" style="margin-bottom:16px;max-height:180px;overflow-y:auto"></div><input type="hidden" id="g-back" value="'+(cid||'')+'"><button class="btn bg" onclick="saveGasto()" style="width:100%">Guardar y distribuir</button>');
+  setTimeout(updDist,50);
+}
+
+function updDist(){
+  var cid=document.getElementById('gc')&&document.getElementById('gc').value;
+  var m=parseFloat(document.getElementById('gm')&&document.getElementById('gm').value)||0;
+  var t=document.getElementById('gdt')&&document.getElementById('gdt').value||'igual';
+  var ps=C.propietarios.filter(function(p){return p.consorcio_id===cid;});
+  var dc=document.getElementById('dc');
+  if(!dc||!ps.length){if(dc)dc.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">Sin propietarios</div>';return;}
+  var h='<table style="font-size:12px"><thead><tr><th>Unidad</th><th>Propietario</th><th>Monto</th></tr></thead><tbody>';
+  ps.forEach(function(p){
+    var v=t==='igual'?m/ps.length:t==='pct'?m*(parseFloat(p.pct)||0)/100:0;
+    h+='<tr><td>'+(p.piso_dpto||p.unidad||'-')+'</td><td>'+p.nombre+'</td><td><input type="number" id="d'+p.id+'" value="'+v.toFixed(2)+'" style="width:100px;background:var(--dark4);border:1px solid #3a3a3a;border-radius:4px;padding:4px 8px;color:var(--text);font-size:12px"></td></tr>';
+  });
+  dc.innerHTML=h+'</tbody></table>';
+}
+
+function saveGasto(){
+  var desc=document.getElementById('gd').value.trim();
+  var m=document.getElementById('gm').value;
+  var cid=document.getElementById('gc').value;
+  if(!desc||!m)return toast('Completa descripcion y monto');
+  var ps=C.propietarios.filter(function(p){return p.consorcio_id===cid;});
+  var dist={};
+  ps.forEach(function(p){var v=document.getElementById('d'+p.id);if(v)dist[p.id]=parseFloat(v.value)||0;});
+  var back=document.getElementById('g-back')&&document.getElementById('g-back').value;
+  var o={id:uid(),descripcion:desc,consorcio_id:cid,monto:parseFloat(m),fecha:document.getElementById('gf').value,tipo_gasto:document.getElementById('gtipo').value,categoria:document.getElementById('gcat').value,proveedor:document.getElementById('gprov').value,distribuciones:dist};
+  dbPost('gastos',o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    C.gastos.unshift(o);closeM();
+    if(back)document.getElementById('content').innerHTML=renderCons(back,'gastos');
+    else nav('gastos');
+    toast('Gasto registrado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+// ===== INGRESOS =====
+function pgIngresos(){
+  var info=!CONFIG.aplicarIntereses?'<div class="al as">Intereses desactivados</div>':dom()<CONFIG.diaInteres?'<div class="al as">Intereses se activan el dia '+CONFIG.diaInteres+' (tasa: '+CONFIG.tasaInteres+'%)</div>':'<div class="al aw">Intereses por mora activos: '+CONFIG.tasaInteres+'% desde el dia '+CONFIG.diaInteres+'</div>';
+  var rows=sortProps(C.propietarios).map(function(p){
+    var d=calcDebt(p.id);
+    var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});
+    var u=C.ingresos.filter(function(i){return i.propietario_id===p.id;}).sort(function(a,b){return b.fecha>a.fecha?1:-1;})[0];
+    return '<tr><td class="p">'+p.nombre+'</td><td>'+(p.piso_dpto||p.unidad||'-')+'</td><td>'+(c?c.nombre:'-')+'</td><td style="color:'+(d.saldo>0?'var(--orange)':'var(--green)')+'">'+money(d.saldo)+'</td><td style="color:'+(d.intereses>0?'var(--red)':'var(--text3)')+'">'+( d.intereses>0?money(d.intereses):'-')+'</td><td style="color:'+(d.total>0?'var(--red)':'var(--green)')+';font-weight:500">'+money(d.total)+'</td><td>'+(u?u.fecha:'-')+'</td><td><button class="btn bgr bs" onclick="mPago(\''+p.id+'\')">Pago</button></td></tr>';
+  }).join('');
+  var hist=C.ingresos.slice(0,25).map(function(i){
+    var p=C.propietarios.find(function(x){return x.id===i.propietario_id;});
+    return '<tr><td class="p">'+(p?p.nombre:'-')+'</td><td>'+(p?p.piso_dpto||p.unidad||'-':'-')+'</td><td>'+money(i.monto)+'</td><td>'+(i.fecha||'-')+'</td><td>'+(i.concepto||'Expensa')+'</td><td>'+(i.comprobante||'-')+'</td><td>'+(i.pagado_por||'Propietario')+'</td><td><button class="btn bo bs" onclick="mEditIngreso(\''+i.id+'\')">Editar</button></td></tr>';
+  }).join('');
+  return info+'<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="btn bg" onclick="mPagoLibre()">+ Registrar pago</button></div><div class="card"><div class="ct" style="margin-bottom:14px">Estado de deuda por propietario</div>'+(C.propietarios.length?'<div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Consorcio</th><th>Saldo</th><th>Interes</th><th>Total deuda</th><th>Ultimo pago</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin propietarios</div>')+'</div><div class="card"><div class="ct" style="margin-bottom:14px">Historial de pagos</div>'+(C.ingresos.length?'<table><thead><tr><th>Propietario</th><th>Unidad</th><th>Monto</th><th>Fecha</th><th>Concepto</th><th>Comprobante</th><th>Pago</th><th></th></tr></thead><tbody>'+hist+'</tbody></table>':'<div class="empty">Sin pagos</div>')+'</div>';
+}
+
+function mEditIngreso(id){
+  var i=C.ingresos.find(function(x){return x.id===id;});
+  openM('<div class="mt">Editar Pago <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Monto ($)</label><input id="im" type="number" value="'+i.monto+'"></div><div class="fg"><label>Fecha</label><input id="if2" type="date" value="'+(i.fecha||'')+'"></div></div><div class="fr"><div class="fg"><label>Concepto</label><input id="ic" value="'+(i.concepto||'')+'"></div><div class="fg"><label>N comprobante</label><input id="ico" value="'+(i.comprobante||'')+'"></div></div><div class="fr"><div class="fg"><label>Quien pago?</label><select id="ipor"><option value="Propietario"'+(i.pagado_por==='Propietario'?' selected':'')+'>Propietario</option><option value="Inquilino"'+(i.pagado_por==='Inquilino'?' selected':'')+'>Inquilino</option><option value="Otro"'+(i.pagado_por==='Otro'?' selected':'')+'>Otro</option></select></div><div class="fg"><label>Nota</label><input id="inota" value="'+(i.pagado_por&&i.pagado_por.includes(' - ')?i.pagado_por.split(' - ')[1]:'')+'"></div></div><button class="btn bg" onclick="updateIngreso(\''+id+'\')" style="width:100%;margin-top:8px">Guardar cambios</button>');
+}
+
+function updateIngreso(id){
+  var nota=document.getElementById('inota').value;
+  var por=document.getElementById('ipor').value;
+  var o={monto:parseFloat(document.getElementById('im').value),fecha:document.getElementById('if2').value,concepto:document.getElementById('ic').value,comprobante:document.getElementById('ico').value,pagado_por:por+(nota?' - '+nota:'')};
+  dbPatch('ingresos',id,o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    var i=C.ingresos.find(function(x){return x.id===id;});if(i)Object.assign(i,o);
+    closeM();nav('ingresos');toast('Pago actualizado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function mPago(pid){
+  var p=C.propietarios.find(function(x){return x.id===pid;});
+  var d=calcDebt(pid);
+  openM('<div class="mt">Registrar pago - '+p.nombre+' <button class="btn bo bs" onclick="closeM()">X</button></div>'+(d.total>0?'<div class="al aw">Deuda: '+money(d.total)+(d.intereses>0?' (inc. '+money(d.intereses)+' interes)':'')+'</div>':'')+'<div class="fr"><div class="fg"><label>Monto ($)</label><input id="im" type="number" value="'+(d.total>0?d.total:'')+'"></div><div class="fg"><label>Fecha</label><input id="if2" type="date" value="'+today()+'"></div></div><div class="fr"><div class="fg"><label>Concepto</label><input id="ic" value="Expensa mensual"></div><div class="fg"><label>N comprobante</label><input id="ico" placeholder="Opcional"></div></div><div class="fr"><div class="fg"><label>Quien pago?</label><select id="ipor"><option value="Propietario">Propietario</option><option value="Inquilino">Inquilino</option><option value="Otro">Otro</option></select></div><div class="fg"><label>Nota</label><input id="inota" placeholder="Opcional"></div></div><input type="hidden" id="ip" value="'+pid+'"><button class="btn bg" onclick="savePago()" style="width:100%;margin-top:8px">Confirmar pago</button>');
+}
+
+function mPagoLibre(){
+  var opts=C.propietarios.map(function(p){var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});return '<option value="'+p.id+'">'+p.nombre+' - '+(p.piso_dpto||p.unidad||'-')+(c?' ('+c.nombre+')':'')+'</option>';}).join('');
+  if(!opts)return toast('Sin propietarios');
+  openM('<div class="mt">Registrar pago <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fg" style="margin-bottom:12px"><label>Propietario</label><select id="ip">'+opts+'</select></div><div class="fr"><div class="fg"><label>Monto ($)</label><input id="im" type="number"></div><div class="fg"><label>Fecha</label><input id="if2" type="date" value="'+today()+'"></div></div><div class="fr"><div class="fg"><label>Concepto</label><input id="ic" value="Expensa mensual"></div><div class="fg"><label>N comprobante</label><input id="ico"></div></div><div class="fr"><div class="fg"><label>Quien pago?</label><select id="ipor"><option value="Propietario">Propietario</option><option value="Inquilino">Inquilino</option><option value="Otro">Otro</option></select></div><div class="fg"><label>Nota</label><input id="inota" placeholder="Opcional"></div></div><button class="btn bg" onclick="savePago()" style="width:100%;margin-top:8px">Confirmar pago</button>');
+}
+
+function savePago(){
+  var m=document.getElementById('im').value;
+  var pid=document.getElementById('ip').value;
+  if(!m)return toast('Ingresa el monto');
+  var nota=document.getElementById('inota').value;
+  var por=document.getElementById('ipor').value;
+  var o={id:uid(),propietario_id:pid,monto:parseFloat(m),fecha:document.getElementById('if2').value,concepto:document.getElementById('ic').value,comprobante:document.getElementById('ico').value,pagado_por:por+(nota?' - '+nota:'')};
+  dbPost('ingresos',o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    C.ingresos.unshift(o);closeM();nav('ingresos');toast('Pago registrado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+// ===== MOROSOS =====
+function pgMorosos(){
+  var mor=C.propietarios.filter(function(p){return calcDebt(p.id).total>0;}).sort(function(a,b){return calcDebt(b.id).total-calcDebt(a.id).total;});
+  var td=mor.reduce(function(s,p){return s+calcDebt(p.id).total;},0);
+  var rows=mor.map(function(p){
+    var d=calcDebt(p.id);
+    var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});
+    var u=C.ingresos.filter(function(i){return i.propietario_id===p.id;}).sort(function(a,b){return b.fecha>a.fecha?1:-1;})[0];
+    var dias=u?Math.floor((new Date()-new Date(u.fecha))/86400000):90;
+    return '<tr><td class="p">'+p.nombre+'</td><td>'+(p.piso_dpto||p.unidad||'-')+'</td><td>'+(c?c.nombre:'-')+'</td><td>'+(p.telefono||'-')+'</td><td style="color:var(--orange)">'+money(d.saldo)+'</td><td style="color:var(--red)">'+money(d.intereses)+'</td><td style="color:var(--red);font-weight:600">'+money(d.total)+'</td><td>'+dias+'d</td><td><button class="btn bgr bs" onclick="mPago(\''+p.id+'\')">Pago</button>'+(p.telefono?'<a href="https://wa.me/549'+p.telefono.replace(/\D/g,'')+'\" target="_blank" class="btn bo bs" style="margin-left:4px">WA</a>':'')+'</td></tr>';
+  }).join('');
+  return '<div class="mg"><div class="m"><div class="ml">Total morosos</div><div class="mv red">'+mor.length+'</div></div><div class="m"><div class="ml">Deuda total</div><div class="mv red">'+money(td)+'</div></div></div><div class="card">'+(mor.length?'<div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Consorcio</th><th>Telefono</th><th>Saldo</th><th>Interes</th><th>Total</th><th>Mora</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin morosos</div>')+'</div>';
+}
+
+// ===== MANTENIMIENTO =====
+function pgManto(){
+  var sc={pendiente:'po',en_curso:'pb',finalizado:'pg',cancelado:'pgr'};
+  var pc={alta:'pr',media:'po',baja:'pgr'};
+  var rows=C.mantenimiento.map(function(m){
+    var c=C.consorcios.find(function(x){return x.id===m.consorcio_id;});
+    return '<tr><td class="p">'+m.descripcion+'</td><td>'+(c?c.nombre:'-')+'</td><td>'+(m.tipo||'-')+'</td><td>'+(m.proveedor||'-')+'</td><td>'+(m.fecha_inicio||'-')+'</td><td>'+money(m.costo||0)+'</td><td><span class="pill '+(pc[m.prioridad]||'pgr')+'">'+(m.prioridad||'-')+'</span></td><td><span class="pill '+(sc[m.estado]||'pgr')+'">'+m.estado.replace('_',' ')+'</span></td><td><button class="btn bo bs" onclick="mEditManto(\''+m.id+'\')">Editar</button> <button class="btn bo bs" onclick="nextEstadoG(\''+m.id+'\',\''+m.estado+'\')">></button> <button class="btn bd bs" onclick="delMG(\''+m.id+'\')">X</button></td></tr>';
+  }).join('');
+  return '<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="btn bg" onclick="mAddManto(null)">+ Nuevo trabajo</button></div><div class="card">'+(C.mantenimiento.length?'<div style="overflow-x:auto"><table><thead><tr><th>Descripcion</th><th>Consorcio</th><th>Tipo</th><th>Proveedor</th><th>Inicio</th><th>Costo</th><th>Prioridad</th><th>Estado</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin trabajos</div>')+'</div>';
+}
+
+function mEditManto(id){
+  var m=C.mantenimiento.find(function(x){return x.id===id;});
+  var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'"'+(c.id===m.consorcio_id?' selected':'')+'>'+c.nombre+'</option>';}).join('');
+  openM('<div class="mt">Editar Trabajo <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Descripcion</label><input id="md" value="'+m.descripcion+'"></div><div class="fg"><label>Consorcio</label><select id="mco">'+opts+'</select></div></div><div class="fr"><div class="fg"><label>Tipo</label><select id="mt2"><option'+(m.tipo==='Mantenimiento preventivo'?' selected':'')+'>Mantenimiento preventivo</option><option'+(m.tipo==='Reparacion'?' selected':'')+'>Reparacion</option><option'+(m.tipo==='Limpieza'?' selected':'')+'>Limpieza</option><option'+(m.tipo==='Inspeccion'?' selected':'')+'>Inspeccion</option><option'+(m.tipo==='Instalacion'?' selected':'')+'>Instalacion</option><option'+(m.tipo==='Otro'?' selected':'')+'>Otro</option></select></div><div class="fg"><label>Prioridad</label><select id="mp"><option value="baja"'+(m.prioridad==='baja'?' selected':'')+'>Baja</option><option value="media"'+(m.prioridad==='media'?' selected':'')+'>Media</option><option value="alta"'+(m.prioridad==='alta'?' selected':'')+'>Alta</option></select></div></div><div class="fr"><div class="fg"><label>Proveedor</label><input id="mprov" value="'+(m.proveedor||'')+'"></div><div class="fg"><label>Costo ($)</label><input id="mc" type="number" value="'+(m.costo||0)+'"></div></div><div class="fr"><div class="fg"><label>Fecha inicio</label><input id="mfi" type="date" value="'+(m.fecha_inicio||'')+'"></div><div class="fg"><label>Fecha fin</label><input id="mff" type="date" value="'+(m.fecha_fin||'')+'"></div></div><div class="fr"><div class="fg"><label>Estado</label><select id="mest"><option value="pendiente"'+(m.estado==='pendiente'?' selected':'')+'>Pendiente</option><option value="en_curso"'+(m.estado==='en_curso'?' selected':'')+'>En curso</option><option value="finalizado"'+(m.estado==='finalizado'?' selected':'')+'>Finalizado</option><option value="cancelado"'+(m.estado==='cancelado'?' selected':'')+'>Cancelado</option></select></div></div><div class="fg" style="margin-bottom:16px"><label>Notas</label><textarea id="mn" rows="2">'+(m.notas||'')+'</textarea></div><button class="btn bg" onclick="updateManto(\''+id+'\')" style="width:100%;margin-top:8px">Guardar cambios</button>');
+}
+
+function updateManto(id){
+  var o={descripcion:document.getElementById('md').value.trim(),consorcio_id:document.getElementById('mco').value,tipo:document.getElementById('mt2').value,prioridad:document.getElementById('mp').value,proveedor:document.getElementById('mprov').value,costo:parseFloat(document.getElementById('mc').value)||0,fecha_inicio:document.getElementById('mfi').value,fecha_fin:document.getElementById('mff').value,estado:document.getElementById('mest').value,notas:document.getElementById('mn').value};
+  dbPatch('mantenimiento',id,o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    var m=C.mantenimiento.find(function(x){return x.id===id;});if(m)Object.assign(m,o);
+    closeM();nav('mantenimiento');toast('Trabajo actualizado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function nextEstadoG(id,est){
+  var es=['pendiente','en_curso','finalizado','cancelado'];
+  var nx=es[(es.indexOf(est)+1)%es.length];
+  dbPatch('mantenimiento',id,{estado:nx}).then(function(){var m=C.mantenimiento.find(function(x){return x.id===id;});if(m)m.estado=nx;nav('mantenimiento');}).catch(function(){toast('Error');});
+}
+
+function delMG(id){
+  if(!confirm('Eliminar?'))return;
+  dbDelete('mantenimiento',id).then(function(){C.mantenimiento=C.mantenimiento.filter(function(m){return m.id!==id;});nav('mantenimiento');}).catch(function(){toast('Error');});
+}
+
+function mAddManto(cid){
+  var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'"'+(cid&&c.id===cid?' selected':'')+'>'+c.nombre+'</option>';}).join('');
+  if(!opts)return toast('Primero crea un consorcio');
+  openM('<div class="mt">Nuevo Trabajo <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Descripcion</label><input id="md" placeholder="Reparacion bomba"></div><div class="fg"><label>Consorcio</label><select id="mco">'+opts+'</select></div></div><div class="fr"><div class="fg"><label>Tipo</label><select id="mt2"><option>Mantenimiento preventivo</option><option>Reparacion</option><option>Limpieza</option><option>Inspeccion</option><option>Instalacion</option><option>Otro</option></select></div><div class="fg"><label>Prioridad</label><select id="mp"><option value="baja">Baja</option><option value="media" selected>Media</option><option value="alta">Alta</option></select></div></div><div class="fr"><div class="fg"><label>Proveedor</label><input id="mprov"></div><div class="fg"><label>Costo ($)</label><input id="mc" type="number"></div></div><div class="fr"><div class="fg"><label>Fecha inicio</label><input id="mfi" type="date" value="'+today()+'"></div><div class="fg"><label>Fecha fin</label><input id="mff" type="date"></div></div><div class="fg" style="margin-bottom:16px"><label>Notas</label><textarea id="mn" rows="2"></textarea></div><input type="hidden" id="m-back" value="'+(cid||'')+'"><button class="btn bg" onclick="saveManto()" style="width:100%">Guardar</button>');
+}
+
+function saveManto(){
+  var d=document.getElementById('md').value.trim();if(!d)return toast('Ingresa descripcion');
+  var back=document.getElementById('m-back')&&document.getElementById('m-back').value;
+  var o={id:uid(),descripcion:d,consorcio_id:document.getElementById('mco').value,tipo:document.getElementById('mt2').value,prioridad:document.getElementById('mp').value,proveedor:document.getElementById('mprov').value,costo:parseFloat(document.getElementById('mc').value)||0,fecha_inicio:document.getElementById('mfi').value,fecha_fin:document.getElementById('mff').value,notas:document.getElementById('mn').value,estado:'pendiente'};
+  dbPost('mantenimiento',o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    C.mantenimiento.unshift(o);closeM();
+    if(back)document.getElementById('content').innerHTML=renderCons(back,'mantenimiento');
+    else nav('mantenimiento');
+    toast('Trabajo registrado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+// ===== RECORDATORIOS =====
+function pgRec(){
+  var hoy=dom();
+  var items=C.recordatorios.map(function(r){
+    var c=r.consorcio_id?C.consorcios.find(function(x){return x.id===r.consorcio_id;}):null;
+    var cn=c?c.nombre:'Todos';
+    var vh=r.dia===hoy&&r.activo;
+    return '<div class="ri" style="'+(vh?'background:rgba(230,126,34,.05);border-radius:8px;padding:10px;margin:0 -8px':'')+'"><div style="width:36px;height:36px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;background:'+(vh?'rgba(230,126,34,.2)':'rgba(52,152,219,.1)')+';flex-shrink:0;font-size:18px">'+(vh?'!':'*')+'</div><div style="flex:1"><div style="font-size:13px;color:var(--text)">'+r.nombre+(vh?' <span class="pill po" style="margin-left:6px">HOY</span>':'')+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Dia '+r.dia+' - '+cn+'</div></div><div style="display:flex;gap:6px;align-items:center"><span class="pill '+(r.activo?'pg':'pgr')+'">'+(r.activo?'Activo':'Inactivo')+'</span><button class="btn bo bs" onclick="mEditRec(\''+r.id+'\')">Editar</button><button class="btn bo bs" onclick="togRec(\''+r.id+'\','+r.activo+')">'+(r.activo?'Pausar':'Activar')+'</button><button class="btn bd bs" onclick="delRec(\''+r.id+'\')">X</button></div></div>';
+  }).join('');
+  return '<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="btn bg" onclick="mAddRec()">+ Nuevo recordatorio</button></div><div class="card">'+(items||'<div class="empty">Sin recordatorios</div>')+'</div>';
+}
+
+function mEditRec(id){
+  var r=C.recordatorios.find(function(x){return x.id===id;});
+  var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'"'+(c.id===r.consorcio_id?' selected':'')+'>'+c.nombre+'</option>';}).join('');
+  openM('<div class="mt">Editar Recordatorio <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Nombre</label><input id="rn" value="'+r.nombre+'"></div><div class="fg"><label>Categoria</label><select id="rcat"><option value="servicio"'+(r.categoria==='servicio'?' selected':'')+'>Servicio</option><option value="limpieza"'+(r.categoria==='limpieza'?' selected':'')+'>Limpieza</option><option value="mantenimiento"'+(r.categoria==='mantenimiento'?' selected':'')+'>Mantenimiento</option><option value="seguro"'+(r.categoria==='seguro'?' selected':'')+'>Seguro</option><option value="otro"'+(r.categoria==='otro'?' selected':'')+'>Otro</option></select></div></div><div class="fr"><div class="fg"><label>Dia del mes</label><input id="rd" type="number" min="1" max="31" value="'+r.dia+'"></div><div class="fg"><label>Consorcio</label><select id="rc"><option value="">Todos</option>'+opts+'</select></div></div><button class="btn bg" onclick="updateRec(\''+id+'\')" style="width:100%;margin-top:8px">Guardar cambios</button>');
+}
+
+function updateRec(id){
+  var o={nombre:document.getElementById('rn').value.trim(),categoria:document.getElementById('rcat').value,dia:parseInt(document.getElementById('rd').value),consorcio_id:document.getElementById('rc').value||null};
+  dbPatch('recordatorios',id,o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    var rec=C.recordatorios.find(function(x){return x.id===id;});if(rec)Object.assign(rec,o);
+    closeM();nav('recordatorios');toast('Actualizado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function mAddRec(){
+  var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'">'+c.nombre+'</option>';}).join('');
+  openM('<div class="mt">Nuevo Recordatorio <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Nombre</label><input id="rn" placeholder="Pago de gas"></div><div class="fg"><label>Categoria</label><select id="rcat"><option value="servicio">Servicio</option><option value="limpieza">Limpieza</option><option value="mantenimiento">Mantenimiento</option><option value="seguro">Seguro</option><option value="otro">Otro</option></select></div></div><div class="fr"><div class="fg"><label>Dia del mes</label><input id="rd" type="number" min="1" max="31"></div><div class="fg"><label>Consorcio (opc.)</label><select id="rc"><option value="">Todos</option>'+opts+'</select></div></div><button class="btn bg" onclick="saveRec()" style="width:100%;margin-top:8px">Guardar</button>');
+}
+
+function saveRec(){
+  var n=document.getElementById('rn').value.trim();
+  var d=parseInt(document.getElementById('rd').value);
+  if(!n||!d||d<1||d>31)return toast('Completa nombre y dia');
+  var o={id:uid(),nombre:n,categoria:document.getElementById('rcat').value,dia:d,consorcio_id:document.getElementById('rc').value||null,activo:true};
+  dbPost('recordatorios',o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    C.recordatorios.unshift(o);closeM();nav('recordatorios');toast('Recordatorio agregado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function togRec(id,act){
+  dbPatch('recordatorios',id,{activo:!act}).then(function(){var r=C.recordatorios.find(function(x){return x.id===id;});if(r)r.activo=!act;nav('recordatorios');}).catch(function(){toast('Error');});
+}
+
+function delRec(id){
+  if(!confirm('Eliminar?'))return;
+  dbDelete('recordatorios',id).then(function(){C.recordatorios=C.recordatorios.filter(function(r){return r.id!==id;});nav('recordatorios');}).catch(function(){toast('Error');});
+}
+
+// ===== MENSAJES =====
+function pgMensajes(){
+  var inbox=C.mensajes.filter(function(m){return m.de&&m.de.indexOf('prop_')===0;});
+  var sent=C.mensajes.filter(function(m){return m.de&&m.de.indexOf('admin_')===0;});
+  var opts=C.propietarios.map(function(p){var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});return '<option value="'+p.id+'">'+p.nombre+' - '+(p.piso_dpto||p.unidad||'-')+(c?' ('+c.nombre+')':'')+'</option>';}).join('');
+  var inboxHTML=inbox.length?inbox.map(function(m){
+    return '<div class="ri" onclick="verMensaje(\''+m.id+'\')" style="cursor:pointer'+((!m.leido)?';background:rgba(52,152,219,.05);border-radius:8px;padding:8px;margin:0 -8px':'')+'"><div class="avatar">'+(m.de_nombre||'?').slice(0,2).toUpperCase()+'</div><div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:13px;font-weight:'+(!m.leido?'600':'400')+';color:var(--text)">'+m.asunto+(!m.leido?' <span class="pill pb">Nuevo</span>':'')+'</div><div style="font-size:11px;color:var(--text3)">'+(m.created_at?m.created_at.slice(0,10):'')+'</div></div><div style="font-size:12px;color:var(--text3);margin-top:2px">De: '+(m.de_nombre||'-')+'</div><div style="font-size:12px;color:var(--text2);margin-top:2px">'+(m.cuerpo||'').slice(0,80)+'</div></div></div>';
+  }).join(''):'<div class="empty" style="padding:20px">Sin mensajes recibidos</div>';
+  var sentHTML=sent.length?sent.map(function(m){var p=C.propietarios.find(function(x){return x.id===m.para_prop_id;});return '<div class="ri"><div class="avatar">'+(m.de_nombre||'?').slice(0,2).toUpperCase()+'</div><div style="flex:1"><div style="display:flex;justify-content:space-between"><div style="font-size:13px;font-weight:500;color:var(--text)">'+m.asunto+'</div><div style="font-size:11px;color:var(--text3)">'+(m.created_at?m.created_at.slice(0,10):'')+'</div></div><div style="font-size:12px;color:var(--text3);margin-top:2px">Para: '+(p?p.nombre+' ('+(p.piso_dpto||p.unidad||'-')+')':'Todos')+'</div></div></div>';}).join(''):'<div class="empty" style="padding:20px">Sin mensajes enviados</div>';
+  return '<div class="card" style="margin-bottom:16px"><div class="ct" style="margin-bottom:14px">Nuevo mensaje</div><div class="fg" style="margin-bottom:12px"><label>Para</label><select id="msg-para"><option value="">Selecciona propietario</option>'+opts+'</select></div><div class="fg" style="margin-bottom:12px"><label>Asunto</label><input id="msg-asunto" placeholder="Asunto"></div><div class="fg" style="margin-bottom:14px"><label>Mensaje</label><textarea id="msg-cuerpo" rows="3"></textarea></div><button class="btn bg" onclick="enviarMensaje()">Enviar mensaje</button></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px"><div class="card"><div class="ct" style="margin-bottom:14px">Recibidos '+(inbox.filter(function(m){return !m.leido;}).length>0?'<span class="pill pr">'+inbox.filter(function(m){return !m.leido;}).length+' nuevos</span>':'')+'</div>'+inboxHTML+'</div><div class="card"><div class="ct" style="margin-bottom:14px">Enviados</div>'+sentHTML+'</div></div>';
+}
+
+function enviarMensaje(){
+  var asunto=document.getElementById('msg-asunto').value.trim();
+  var cuerpo=document.getElementById('msg-cuerpo').value.trim();
+  var para=document.getElementById('msg-para')&&document.getElementById('msg-para').value;
+  if(!asunto||!cuerpo)return toast('Completa asunto y mensaje');
+  if(!para)return toast('Selecciona un propietario');
+  var o={id:uid(),de:'admin_'+currentUser.nombre.toLowerCase(),de_nombre:currentUser.nombre,para_prop_id:para,asunto:asunto,cuerpo:cuerpo,leido:false};
+  dbPost('mensajes',o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    C.mensajes.unshift(o);nav('mensajes');toast('Mensaje enviado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function verMensaje(id){
+  var m=C.mensajes.find(function(x){return x.id===id;});if(!m)return;
+  var p=C.propietarios.find(function(x){return x.id===m.para_prop_id||x.id===(m.de||'').replace('prop_','');});
+  if(!m.leido){
+    m.leido=true;
+    dbPatch('mensajes',id,{leido:true});
+    updateMsgBadge();
+  }
+  openM('<div class="mt">'+m.asunto+' <button class="btn bo bs" onclick="closeM()">X</button></div><div style="background:var(--dark3);border-radius:var(--r);padding:12px 16px;margin-bottom:16px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><div style="font-size:12px;color:var(--text3)">De: <span style="color:var(--text)">'+(m.de_nombre||'-')+'</span></div><div style="font-size:11px;color:var(--text3)">'+(m.created_at?m.created_at.slice(0,16).replace('T',' '):'')+'</div></div>'+(p?'<div style="font-size:12px;color:var(--text3)">Para: <span style="color:var(--text)">'+p.nombre+' ('+(p.piso_dpto||p.unidad||'-')+')</span></div>':'')+'</div><div style="font-size:14px;color:var(--text2);line-height:1.6;white-space:pre-wrap">'+m.cuerpo+'</div><hr style="border-color:#2a2a2a;margin:16px 0"><div style="font-size:13px;font-weight:500;margin-bottom:10px">Responder</div><div class="fg" style="margin-bottom:10px"><label>Asunto</label><input id="rep-asunto" value="Re: '+m.asunto+'"></div><div class="fg" style="margin-bottom:14px"><label>Mensaje</label><textarea id="rep-cuerpo" rows="3"></textarea></div><button class="btn bg" onclick="responderMensaje(\''+((m.de||'').replace('prop_',''))+'\')">Responder</button>');
+}
+
+function responderMensaje(pid){
+  var asunto=document.getElementById('rep-asunto').value.trim();
+  var cuerpo=document.getElementById('rep-cuerpo').value.trim();
+  if(!cuerpo)return toast('Escribe el mensaje');
+  var o={id:uid(),de:'admin_'+currentUser.nombre.toLowerCase(),de_nombre:currentUser.nombre,para_prop_id:pid||null,asunto:asunto,cuerpo:cuerpo,leido:false};
+  dbPost('mensajes',o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    C.mensajes.unshift(o);closeM();nav('mensajes');toast('Respuesta enviada');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+// ===== COMUNICACIONES =====
+function pgComm(){
+  var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'">'+c.nombre+'</option>';}).join('');
+  var tc={aviso:'pb',urgente:'pr',reunion:'po',circular:'pgr'};
+  var items=C.comunicaciones.map(function(c){
+    var co=C.consorcios.find(function(x){return x.id===c.consorcio_id;});
+    return '<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="display:flex;align-items:center;gap:8px"><span class="pill '+(tc[c.tipo]||'pgr')+'">'+c.tipo+'</span><span style="font-size:13px;font-weight:500">'+c.titulo+'</span></div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--text3)">'+(c.fecha||'-')+' - '+(co?co.nombre:'Todos')+'</span><button class="btn bo bs" onclick="mEditComm(\''+c.id+'\')">Editar</button><button class="btn bd bs" onclick="delComm(\''+c.id+'\')">X</button></div></div><div style="font-size:13px;color:var(--text2)">'+c.cuerpo+'</div></div>';
+  }).join('');
+  return '<div class="card" style="margin-bottom:20px"><div class="ct" style="margin-bottom:14px">Nueva comunicacion</div><div class="fr"><div class="fg"><label>Titulo</label><input id="cot" placeholder="Asunto"></div><div class="fg"><label>Tipo</label><select id="coty"><option value="aviso">Aviso general</option><option value="urgente">Urgente</option><option value="reunion">Convocatoria a asamblea</option><option value="circular">Circular</option></select></div></div><div class="fr"><div class="fg"><label>Consorcio</label><select id="coc"><option value="">Todos</option>'+opts+'</select></div><div class="fg"><label>Fecha</label><input id="cof" type="date" value="'+today()+'"></div></div><div class="fg" style="margin-bottom:12px"><label>Contenido</label><textarea id="cob" rows="3"></textarea></div><button class="btn bg" onclick="saveComm()">Publicar</button></div>'+(items||'<div class="empty">Sin comunicaciones</div>');
+}
+
+function mEditComm(id){
+  var c=C.comunicaciones.find(function(x){return x.id===id;});
+  var opts=C.consorcios.map(function(co){return '<option value="'+co.id+'"'+(co.id===c.consorcio_id?' selected':'')+'>'+co.nombre+'</option>';}).join('');
+  openM('<div class="mt">Editar Comunicacion <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Titulo</label><input id="cot" value="'+c.titulo+'"></div><div class="fg"><label>Tipo</label><select id="coty"><option value="aviso"'+(c.tipo==='aviso'?' selected':'')+'>Aviso general</option><option value="urgente"'+(c.tipo==='urgente'?' selected':'')+'>Urgente</option><option value="reunion"'+(c.tipo==='reunion'?' selected':'')+'>Convocatoria</option><option value="circular"'+(c.tipo==='circular'?' selected':'')+'>Circular</option></select></div></div><div class="fr"><div class="fg"><label>Consorcio</label><select id="coc"><option value="">Todos</option>'+opts+'</select></div><div class="fg"><label>Fecha</label><input id="cof" type="date" value="'+(c.fecha||'')+'"></div></div><div class="fg" style="margin-bottom:16px"><label>Contenido</label><textarea id="cob" rows="3">'+c.cuerpo+'</textarea></div><button class="btn bg" onclick="updateComm(\''+id+'\')" style="width:100%">Guardar cambios</button>');
+}
+
+function updateComm(id){
+  var o={titulo:document.getElementById('cot').value.trim(),tipo:document.getElementById('coty').value,consorcio_id:document.getElementById('coc').value||null,fecha:document.getElementById('cof').value,cuerpo:document.getElementById('cob').value.trim()};
+  dbPatch('comunicaciones',id,o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    var c=C.comunicaciones.find(function(x){return x.id===id;});if(c)Object.assign(c,o);
+    closeM();nav('comunicaciones');toast('Actualizado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function saveComm(){
+  var t=document.getElementById('cot').value.trim();
+  var b=document.getElementById('cob').value.trim();
+  if(!t||!b)return toast('Completa titulo y contenido');
+  var o={id:uid(),titulo:t,cuerpo:b,tipo:document.getElementById('coty').value,consorcio_id:document.getElementById('coc').value||null,fecha:document.getElementById('cof').value};
+  dbPost('comunicaciones',o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    C.comunicaciones.unshift(o);nav('comunicaciones');toast('Publicado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function delComm(id){
+  dbDelete('comunicaciones',id).then(function(){C.comunicaciones=C.comunicaciones.filter(function(c){return c.id!==id;});nav('comunicaciones');}).catch(function(){toast('Error');});
+}
+
+// ===== CLIENTES =====
+function pgClientes(){
+  var sc={nuevo:'pb',contactado:'po',incorporado:'pg',descartado:'pgr'};
+  var rows=C.clientes.map(function(c){
+    return '<tr><td class="p">'+c.nombre+'</td><td>'+(c.rol||'-')+'</td><td>'+(c.ubicacion||'-')+'</td><td>'+(c.unidades||'-')+'</td><td>'+(c.telefono||'-')+'</td><td>'+(c.created_at?c.created_at.slice(0,10):'-')+'</td><td><span class="pill '+(sc[c.estado]||'pgr')+'">'+c.estado+'</span></td><td><button class="btn bo bs" onclick="mEditCliente(\''+c.id+'\')">Editar</button> '+(c.telefono?'<a href="https://wa.me/549'+c.telefono.replace(/\D/g,'')+'\" target="_blank" class="btn bo bs">WA</a>':'')+'</td></tr>';
+  }).join('');
+  return '<div class="card" style="margin-bottom:20px"><div class="ct" style="margin-bottom:14px">Nueva consulta</div><div class="fr"><div class="fg"><label>Nombre</label><input id="cln" placeholder="Juan Garcia"></div><div class="fg"><label>Rol</label><select id="clr"><option>Propietario</option><option>Inquilino</option><option>Miembro del consejo</option><option>Administrador</option></select></div></div><div class="fr"><div class="fg"><label>Ubicacion</label><input id="clu"></div><div class="fg"><label>Unidades</label><input id="clun" type="number"></div></div><div class="fr"><div class="fg"><label>Telefono</label><input id="clt" placeholder="264..."></div><div class="fg"><label>Email</label><input id="cle"></div></div><div class="fg" style="margin-bottom:8px"><label>Problemas actuales</label><textarea id="clp" rows="2"></textarea></div><div class="fg" style="margin-bottom:12px"><label>Disponibilidad</label><select id="clm"><option>Presencial</option><option>Zoom</option><option>WhatsApp</option><option>Cualquiera</option></select></div><button class="btn bg" onclick="saveCliente()">Guardar lead</button></div><div class="card">'+(C.clientes.length?'<div style="overflow-x:auto"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Ubicacion</th><th>Unidades</th><th>Tel.</th><th>Fecha</th><th>Estado</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin consultas</div>')+'</div>';
+}
+
+function mEditCliente(id){
+  var c=C.clientes.find(function(x){return x.id===id;});
+  openM('<div class="mt">Editar Cliente <button class="btn bo bs" onclick="closeM()">X</button></div><div class="fr"><div class="fg"><label>Nombre</label><input id="cln" value="'+c.nombre+'"></div><div class="fg"><label>Rol</label><select id="clr"><option'+(c.rol==='Propietario'?' selected':'')+'>Propietario</option><option'+(c.rol==='Inquilino'?' selected':'')+'>Inquilino</option><option'+(c.rol==='Miembro del consejo'?' selected':'')+'>Miembro del consejo</option><option'+(c.rol==='Administrador'?' selected':'')+'>Administrador</option></select></div></div><div class="fr"><div class="fg"><label>Ubicacion</label><input id="clu" value="'+(c.ubicacion||'')+'"></div><div class="fg"><label>Unidades</label><input id="clun" type="number" value="'+(c.unidades||'')+'"></div></div><div class="fr"><div class="fg"><label>Telefono</label><input id="clt" value="'+(c.telefono||'')+'"></div><div class="fg"><label>Email</label><input id="cle" value="'+(c.email||'')+'"></div></div><div class="fg" style="margin-bottom:8px"><label>Problemas</label><textarea id="clp" rows="2">'+(c.problemas||'')+'</textarea></div><div class="fg" style="margin-bottom:12px"><label>Estado</label><select id="clest"><option value="nuevo"'+(c.estado==='nuevo'?' selected':'')+'>Nuevo</option><option value="contactado"'+(c.estado==='contactado'?' selected':'')+'>Contactado</option><option value="incorporado"'+(c.estado==='incorporado'?' selected':'')+'>Incorporado</option><option value="descartado"'+(c.estado==='descartado'?' selected':'')+'>Descartado</option></select></div><button class="btn bg" onclick="updateCliente(\''+id+'\')" style="width:100%">Guardar cambios</button>');
+}
+
+function updateCliente(id){
+  var o={nombre:document.getElementById('cln').value.trim(),rol:document.getElementById('clr').value,ubicacion:document.getElementById('clu').value,unidades:document.getElementById('clun').value,telefono:document.getElementById('clt').value,email:document.getElementById('cle').value,problemas:document.getElementById('clp').value,estado:document.getElementById('clest').value};
+  dbPatch('clientes',id,o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    var c=C.clientes.find(function(x){return x.id===id;});if(c)Object.assign(c,o);
+    closeM();nav('clientes');toast('Actualizado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function saveCliente(){
+  var n=document.getElementById('cln').value.trim();if(!n)return toast('Ingresa el nombre');
+  var o={id:uid(),nombre:n,rol:document.getElementById('clr').value,ubicacion:document.getElementById('clu').value,unidades:document.getElementById('clun').value,telefono:document.getElementById('clt').value,email:document.getElementById('cle').value,problemas:document.getElementById('clp').value,reunion:document.getElementById('clm').value,estado:'nuevo'};
+  dbPost('clientes',o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    C.clientes.unshift(o);nav('clientes');toast('Lead guardado');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+// ===== CONFIGURACION =====
+function pgConfig(){
+  return '<div class="card"><div class="ct" style="margin-bottom:20px">Configuracion general</div><div style="border-bottom:1px solid #2a2a2a;padding-bottom:20px;margin-bottom:20px"><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:14px">Intereses por mora</div><div class="fr"><div class="fg"><label>Aplicar intereses</label><select id="cfg-aplicar" onchange="toggleInteresConfig()"><option value="1"'+(CONFIG.aplicarIntereses?' selected':'')+'>Si, aplicar intereses</option><option value="0"'+(!CONFIG.aplicarIntereses?' selected':'')+'>No, sin intereses</option></select></div><div class="fg" id="cfg-tasa-wrap" style="'+(CONFIG.aplicarIntereses?'':'opacity:.4;pointer-events:none')+'"><label>Tasa de interes (%)</label><input id="cfg-tasa" type="number" step="0.1" value="'+CONFIG.tasaInteres+'" min="0" max="100"></div><div class="fg" id="cfg-dia-wrap" style="'+(CONFIG.aplicarIntereses?'':'opacity:.4;pointer-events:none')+'"><label>Aplicar a partir del dia</label><input id="cfg-dia" type="number" value="'+CONFIG.diaInteres+'" min="1" max="31"></div></div><div class="al '+(CONFIG.aplicarIntereses?'aw':'as')+'" style="margin-bottom:0">'+(CONFIG.aplicarIntereses?'Se aplica '+CONFIG.tasaInteres+'% desde el dia '+CONFIG.diaInteres+' de cada mes.':'Intereses desactivados. No se aplican cargos por mora.')+'</div></div><button class="btn bg" onclick="guardarConfig()">Guardar configuracion</button></div>';
+}
+
+function toggleInteresConfig(){
+  var aplicar=document.getElementById('cfg-aplicar').value==='1';
+  document.getElementById('cfg-tasa-wrap').style.opacity=aplicar?'1':'0.4';
+  document.getElementById('cfg-tasa-wrap').style.pointerEvents=aplicar?'auto':'none';
+  document.getElementById('cfg-dia-wrap').style.opacity=aplicar?'1':'0.4';
+  document.getElementById('cfg-dia-wrap').style.pointerEvents=aplicar?'auto':'none';
+}
+
+function guardarConfig(){
+  CONFIG.aplicarIntereses=document.getElementById('cfg-aplicar').value==='1';
+  CONFIG.tasaInteres=parseFloat(document.getElementById('cfg-tasa').value)||10;
+  CONFIG.diaInteres=parseInt(document.getElementById('cfg-dia').value)||10;
+  saveConfig();nav('configuracion');toast('Configuracion guardada');
+}
+
+// ===== PORTAL =====
+function pgPortal(){
+  var items=sortProps(C.propietarios).map(function(p){
+    var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});
+    var d=calcDebt(p.id);
+    var codigo=p.id.slice(-6).toUpperCase();
+    return '<div style="background:var(--dark3);border:1px solid #3a3a3a;border-radius:var(--r);padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px"><div style="display:flex;align-items:center;gap:12px"><div class="avatar">'+p.nombre.slice(0,2).toUpperCase()+'</div><div><div style="font-size:13px;font-weight:500">'+p.nombre+'</div><div style="font-size:11px;color:var(--text3)">'+(c?c.nombre:'-')+' - '+(p.piso_dpto||p.unidad||'-')+'</div></div></div><div style="display:flex;align-items:center;gap:12px"><div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Deuda</div><div style="font-size:13px;font-weight:500;color:'+(d.total>0?'var(--red)':'var(--green)')+'">'+money(d.total)+'</div></div><div style="text-align:center;background:var(--dark4);padding:6px 12px;border-radius:var(--r)"><div style="font-size:10px;color:var(--text3);margin-bottom:2px">Codigo</div><div style="font-size:14px;font-weight:600;color:var(--gold);letter-spacing:2px">'+codigo+'</div></div><button class="btn bbl bs" onclick="verPortalProp(\''+p.id+'\')">Ver portal</button></div></div>';
+  }).join('');
+  return '<div class="al ai">Comparte el codigo de 6 caracteres con cada propietario para que accedan a su portal.</div><div class="card"><div class="ct" style="margin-bottom:14px">Accesos de propietarios</div>'+(C.propietarios.length?items:'<div class="empty">Sin propietarios</div>')+'</div>';
+}
+
+function verPortalProp(pid){
+  var p=C.propietarios.find(function(x){return x.id===pid;});
+  var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});
+  var d=calcDebt(pid);
+  var pagos=C.ingresos.filter(function(i){return i.propietario_id===pid;});
+  var msgs=C.mensajes.filter(function(m){return m.para_prop_id===pid;});
+  var pagosHTML=pagos.map(function(i){return '<tr><td class="p">'+money(i.monto)+'</td><td>'+(i.fecha||'-')+'</td><td>'+(i.concepto||'Expensa')+'</td><td>'+(i.comprobante||'-')+'</td><td>'+(i.pagado_por||'Propietario')+'</td></tr>';}).join('');
+  var msgsHTML=msgs.map(function(m){return '<div style="padding:10px 0;border-bottom:1px solid #1e1e1e"><div style="font-size:13px;font-weight:500">'+m.asunto+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px">'+m.cuerpo+'</div></div>';}).join('');
+  openM('<div class="mt">Portal - '+p.nombre+' <button class="btn bo bs" onclick="closeM()">X</button></div><div style="background:var(--dark3);border-radius:var(--r);padding:12px;margin-bottom:16px"><div style="font-size:12px;color:var(--text3)">Consorcio - Unidad</div><div style="font-size:14px;font-weight:500;margin-top:2px">'+(c?c.nombre:'-')+' - '+(p.piso_dpto||p.unidad||'-')+'</div>'+(p.alquilado?'<div style="font-size:12px;color:var(--orange);margin-top:4px">Alquilado'+(p.inquilino?' - Inquilino: '+p.inquilino:'')+(p.inquilino_tel?' ('+p.inquilino_tel+')':'')+'</div>':'')+'</div><div class="mg" style="margin-bottom:16px"><div class="m"><div class="ml">Saldo</div><div class="mv" style="color:'+(d.saldo>0?'var(--orange)':'var(--green)')+'">'+money(d.saldo)+'</div></div><div class="m"><div class="ml">Interes</div><div class="mv" style="color:'+(d.intereses>0?'var(--red)':'var(--text3)')+'">'+money(d.intereses)+'</div></div><div class="m"><div class="ml">Total</div><div class="mv" style="color:'+(d.total>0?'var(--red)':'var(--green)')+'">'+money(d.total)+'</div></div></div><div style="font-size:13px;font-weight:500;margin-bottom:10px">Historial de pagos</div>'+(pagos.length?'<table style="margin-bottom:16px"><thead><tr><th>Monto</th><th>Fecha</th><th>Concepto</th><th>Comprobante</th><th>Pago</th></tr></thead><tbody>'+pagosHTML+'</tbody></table>':'<div style="color:var(--text3);font-size:13px;margin-bottom:16px">Sin pagos</div>')+'<div style="font-size:13px;font-weight:500;margin-bottom:10px">Mensajes</div>'+(msgs.length?msgsHTML:'<div style="color:var(--text3);font-size:13px">Sin mensajes</div>'));
+}
+
+function mostrarPortalPropietario(pid){
+  var p=C.propietarios.find(function(x){return x.id===pid;});
+  var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});
+  var d=calcDebt(pid);
+  var pagos=C.ingresos.filter(function(i){return i.propietario_id===pid;});
+  var msgs=C.mensajes.filter(function(m){return m.para_prop_id===pid;});
+  var comms=C.comunicaciones.filter(function(x){return !x.consorcio_id||x.consorcio_id===p.consorcio_id;}).slice(0,5);
+  document.getElementById('sidebar').style.display='none';
+  document.querySelector('.main').style.marginLeft='0';
+  document.getElementById('back-wrap').style.display='none';
+  document.getElementById('user-badge').textContent=p.nombre||'Propietario';
+  document.getElementById('dbs').style.display='none';
+  document.getElementById('pt-text').textContent='Mi cuenta';
+  var pagosHTML=pagos.map(function(i){return '<tr><td class="p">'+money(i.monto)+'</td><td>'+(i.fecha||'-')+'</td><td>'+(i.concepto||'Expensa')+'</td><td>'+(i.comprobante||'-')+'</td><td>'+(i.pagado_por||'Propietario')+'</td></tr>';}).join('');
+  var msgsHTML=msgs.map(function(m){return '<div style="padding:12px 0;border-bottom:1px solid #1e1e1e">'+((!m.leido)?'<span class="pill pb" style="margin-bottom:6px;display:inline-flex">Nuevo</span><br>':'')+'<div style="font-size:13px;font-weight:500">'+m.asunto+'</div><div style="font-size:13px;color:var(--text2);margin-top:4px">'+m.cuerpo+'</div></div>';}).join('');
+  var commsHTML=comms.map(function(x){return '<div style="padding:12px 0;border-bottom:1px solid #1e1e1e"><div style="font-size:13px;font-weight:500">'+x.titulo+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px">'+x.cuerpo+'</div></div>';}).join('');
+  document.getElementById('content').innerHTML='<div style="max-width:700px;margin:0 auto"><div class="card"><div style="display:flex;align-items:center;gap:14px;margin-bottom:16px"><div class="avatar" style="width:48px;height:48px;font-size:16px">'+p.nombre.slice(0,2).toUpperCase()+'</div><div><div style="font-size:16px;font-weight:500">'+p.nombre+'</div><div style="font-size:12px;color:var(--text3)">'+(c?c.nombre:'-')+' - '+(p.piso_dpto||p.unidad||'-')+'</div></div></div><div class="mg"><div class="m"><div class="ml">Saldo</div><div class="mv" style="color:'+(d.saldo>0?'var(--orange)':'var(--green)')+'">'+money(d.saldo)+'</div></div><div class="m"><div class="ml">Interes mora</div><div class="mv" style="color:'+(d.intereses>0?'var(--red)':'var(--text3)')+'">'+money(d.intereses)+'</div></div><div class="m"><div class="ml">Total deuda</div><div class="mv" style="color:'+(d.total>0?'var(--red)':'var(--green)')+'">'+money(d.total)+'</div></div></div>'+(d.total>0?'<div class="al aw" style="margin-bottom:0">Tenes deuda pendiente. Contacta a la administracion.</div>':'<div class="al as" style="margin-bottom:0">Estas al dia.</div>')+'</div><div class="card"><div class="ct" style="margin-bottom:14px">Mis mensajes</div>'+(msgs.length?msgsHTML:'<div class="empty">Sin mensajes</div>')+'<hr style="border-color:#2a2a2a;margin:16px 0"><div style="font-size:13px;font-weight:500;margin-bottom:10px">Enviar mensaje a la administracion</div><div class="fg" style="margin-bottom:10px"><label>Asunto</label><input id="msg-asunto" placeholder="Consulta o comentario"></div><div class="fg" style="margin-bottom:12px"><label>Mensaje</label><textarea id="msg-cuerpo" rows="3"></textarea></div><button class="btn bg" onclick="enviarMensajeProp(\''+pid+'\')">Enviar</button></div><div class="card"><div class="ct" style="margin-bottom:14px">Historial de pagos</div>'+(pagos.length?'<table><thead><tr><th>Monto</th><th>Fecha</th><th>Concepto</th><th>Comprobante</th><th>Pago</th></tr></thead><tbody>'+pagosHTML+'</tbody></table>':'<div class="empty">Sin pagos</div>')+'</div><div class="card"><div class="ct" style="margin-bottom:14px">Comunicaciones del consorcio</div>'+(comms.length?commsHTML:'<div class="empty">Sin comunicaciones</div>')+'</div><div style="text-align:center;margin-top:20px"><button class="btn bo" onclick="logout()">Cerrar sesion</button></div></div>';
+}
+
+function enviarMensajeProp(pid){
+  var asunto=document.getElementById('msg-asunto').value.trim();
+  var cuerpo=document.getElementById('msg-cuerpo').value.trim();
+  if(!asunto||!cuerpo)return toast('Completa asunto y mensaje');
+  var o={id:uid(),de:'prop_'+pid,de_nombre:currentUser.nombre,para_prop_id:null,asunto:asunto,cuerpo:cuerpo,leido:false};
+  dbPost('mensajes',o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    toast('Mensaje enviado a la administracion');
+    document.getElementById('msg-asunto').value='';
+    document.getElementById('msg-cuerpo').value='';
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+</script>
+</body>
+</html>
