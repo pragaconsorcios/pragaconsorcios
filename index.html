@@ -185,10 +185,79 @@ td.p{color:var(--text);font-weight:600}
 .cf{height:100%;border-radius:4px;transition:width 1s ease}
 .hbtn{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:var(--dark3);border:1px solid #2a2a3a;border-radius:var(--r);cursor:pointer;font-size:18px;flex-shrink:0}
 @media(max-width:768px){
-  .sidebar{transform:translateX(-230px);transition:transform .25s ease;box-shadow:4px 0 30px rgba(0,0,0,.8)}
+  /* Sidebar como drawer */
+  .sidebar{transform:translateX(-230px);transition:transform .25s ease;box-shadow:4px 0 30px rgba(0,0,0,.8);z-index:200}
   .sidebar.open{transform:translateX(0)}
   .main{margin-left:0!important}
   .hbtn{display:flex}
+
+  /* Topbar compacta */
+  .topbar{padding:10px 14px;flex-wrap:nowrap;gap:8px}
+  .topbar-t{font-size:14px;gap:8px;min-width:0;flex:1}
+  .topbar-r{gap:6px;flex-shrink:0}
+  #dbs{display:none}
+
+  /* Contenido */
+  .content{padding:14px}
+
+  /* Stat cards: 2 columnas en mobile */
+  .stat-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+  .stat-card{padding:14px 12px}
+  .stat-info .stat-val{font-size:20px}
+  .stat-icon{width:36px;height:36px;font-size:16px;border-radius:10px}
+
+  /* Graficos: una columna */
+  .content > div[style*="grid-template-columns:1fr 1fr 1fr"]{
+    display:flex!important;flex-direction:column!important;gap:12px!important
+  }
+  .chart-wrap{padding:14px}
+  .bar-chart{height:100px}
+  .bar-pair{height:80px}
+  .bar{width:12px}
+  .line-chart{height:80px}
+  .donut-wrap{flex-direction:column;align-items:flex-start;gap:12px}
+
+  /* Cards generales */
+  .card{padding:14px;border-radius:12px}
+  .mg{grid-template-columns:repeat(2,1fr);gap:8px}
+  .m{padding:12px}
+  .mv{font-size:18px}
+
+  /* Tabs de consorcio: scroll horizontal */
+  .tb{overflow-x:auto;width:100%;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+  .tab{white-space:nowrap;padding:7px 12px}
+
+  /* Tablas: scroll horizontal */
+  table{min-width:520px}
+  div[style*="overflow-x:auto"]{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  /* Cards de consorcio: 1 columna */
+  .cg{grid-template-columns:1fr}
+
+  /* Modal: full screen casi */
+  .mo{padding:10px;align-items:flex-end}
+  .mi{border-radius:16px 16px 0 0;max-height:92vh;padding:20px 16px}
+
+  /* Botones pequeños en tablas */
+  .bs{padding:4px 8px;font-size:11px}
+
+  /* Grid de cards de dashboard */
+  .content > div[style*="grid-template-columns:repeat(auto-fit,minmax(260px"]{
+    display:flex!important;flex-direction:column!important;gap:12px!important
+  }
+
+  /* Sidebar footer */
+  .sidebar-foot{padding:12px 14px}
+
+  /* Formularios */
+  .fr{grid-template-columns:1fr}
+
+  /* Toast */
+  .toast{bottom:16px;right:12px;left:12px;text-align:center}
+
+  /* Liquidacion */
+  .liq-row{flex-direction:column;gap:2px;align-items:flex-start}
+  .liq-tot{font-size:13px}
 }
 </style>
 </head>
