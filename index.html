@@ -17,6 +17,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ltab{flex:1;text-align:center;padding:8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text2)}
 .ltab.active{background:var(--dark2);color:var(--text);font-weight:500}
 .lerr{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);color:var(--red);padding:10px 14px;border-radius:var(--r);font-size:13px;margin-bottom:14px;display:none}
+.logo-icon{display:flex;justify-content:center;margin-bottom:16px}
+.logo-icon svg{filter:drop-shadow(0 0 12px rgba(201,168,76,.4));animation:pulse-glow 3s ease-in-out infinite}
+@keyframes pulse-glow{0%,100%{filter:drop-shadow(0 0 8px rgba(201,168,76,.3))}50%{filter:drop-shadow(0 0 20px rgba(201,168,76,.7))}}
+.chart-wrap{background:var(--dark3);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.chart-title{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;font-weight:600}
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:120px}
+.bar-group{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.bar-pair{display:flex;gap:3px;align-items:flex-end;height:100px}
+.bar{border-radius:4px 4px 0 0;width:14px;transition:height .8s cubic-bezier(.4,0,.2,1);animation:grow-up .8s cubic-bezier(.4,0,.2,1) both}
+@keyframes grow-up{from{transform:scaleY(0);transform-origin:bottom}to{transform:scaleY(1);transform-origin:bottom}}
+.bar-label{font-size:10px;color:var(--text3);white-space:nowrap}
+.donut-wrap{display:flex;align-items:center;gap:20px}
+.donut-legend{display:flex;flex-direction:column;gap:8px;flex:1}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.line-chart{position:relative;height:100px}
+.line-chart svg{width:100%;height:100%;overflow:visible}
+.line-path{fill:none;stroke:var(--gold);stroke-width:2.5;stroke-dasharray:1000;stroke-dashoffset:1000;animation:draw-line 1.5s ease forwards .3s}
+@keyframes draw-line{to{stroke-dashoffset:0}}
+.area-path{animation:fade-in-area .8s ease forwards 1s;opacity:0}
+@keyframes fade-in-area{to{opacity:1}}
 .app{display:flex;min-height:100vh}
 .sidebar{width:220px;background:var(--dark2);border-right:1px solid #2a2a2a;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;overflow-y:auto}
 .logo{padding:20px 16px 16px;border-bottom:1px solid #2a2a2a}
@@ -114,7 +135,36 @@ td.p{color:var(--text);font-weight:500}
 
 <div id="ls" class="ls">
   <div class="lb">
-    <div class="lt"><div class="lt1">PRAGA</div><div class="lt2">Administracion de Consorcios</div></div>
+    <div class="lt">
+      <div class="logo-icon">
+        <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Edificio principal -->
+          <rect x="16" y="22" width="40" height="44" rx="2" fill="#1A1A1A" stroke="#C9A84C" stroke-width="1.5"/>
+          <!-- Piso superior central -->
+          <rect x="24" y="12" width="24" height="14" rx="2" fill="#1A1A1A" stroke="#C9A84C" stroke-width="1.5"/>
+          <!-- Antena -->
+          <line x1="36" y1="12" x2="36" y2="4" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="36" cy="4" r="2" fill="#C9A84C"/>
+          <!-- Ventanas fila 1 -->
+          <rect x="21" y="28" width="8" height="7" rx="1" fill="#C9A84C" opacity=".25"/>
+          <rect x="32" y="28" width="8" height="7" rx="1" fill="#C9A84C" opacity=".6"/>
+          <rect x="43" y="28" width="8" height="7" rx="1" fill="#C9A84C" opacity=".25"/>
+          <!-- Ventanas fila 2 -->
+          <rect x="21" y="40" width="8" height="7" rx="1" fill="#C9A84C" opacity=".6"/>
+          <rect x="32" y="40" width="8" height="7" rx="1" fill="#C9A84C" opacity=".25"/>
+          <rect x="43" y="40" width="8" height="7" rx="1" fill="#C9A84C" opacity=".6"/>
+          <!-- Ventanas piso superior -->
+          <rect x="28" y="16" width="6" height="6" rx="1" fill="#C9A84C" opacity=".4"/>
+          <rect x="38" y="16" width="6" height="6" rx="1" fill="#C9A84C" opacity=".8"/>
+          <!-- Puerta -->
+          <rect x="30" y="52" width="12" height="14" rx="2" fill="#C9A84C" opacity=".2" stroke="#C9A84C" stroke-width="1"/>
+          <circle cx="39" cy="59" r="1.2" fill="#C9A84C"/>
+          <!-- Suelo -->
+          <line x1="10" y1="66" x2="62" y2="66" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round" opacity=".4"/>
+        </svg>
+      </div>
+      <div class="lt1">PRAGA</div><div class="lt2">Administracion de Consorcios</div>
+    </div>
     <div class="ltabs">
       <div class="ltab active" id="lta" onclick="slt('a')">Administrador</div>
       <div class="ltab" id="ltp" onclick="slt('p')">Propietario</div>
@@ -365,7 +415,72 @@ function pgD(){
   var vH=vh.length?vh.map(function(r){return '<div class="ri"><div style="font-size:20px;margin-right:4px">!</div><div><div style="font-size:13px;color:var(--text)">'+r.nombre+'</div><div style="font-size:11px;color:var(--text3)">Dia '+r.dia+'</div></div></div>';}).join(''):'<div class="empty" style="padding:16px">Sin vencimientos hoy</div>';
   var mH=mor.slice(0,5).map(function(p){var d=calcD(p.id);var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});return '<tr><td class="p">'+p.nombre+'</td><td>'+(p.piso_dpto||p.unidad||'-')+'</td><td>'+(c?c.nombre:'-')+'</td><td style="color:var(--red);font-weight:500">'+$m(d.total)+'</td></tr>';}).join('');
   var uH=urg.slice(0,3).map(function(m){var c=C.consorcios.find(function(x){return x.id===m.consorcio_id;});return '<tr><td class="p">'+m.descripcion+'</td><td>'+(c?c.nombre:'-')+'</td><td><span class="pill po">'+m.estado.replace('_',' ')+'</span></td></tr>';}).join('');
-  return '<div class="mg"><div class="m"><div class="ml">Consorcios</div><div class="mv gold">'+C.consorcios.length+'</div></div><div class="m"><div class="ml">Caja total</div><div class="mv '+cajaCls+'">'+$m(caja.saldo)+'</div></div><div class="m"><div class="ml">Ingresos</div><div class="mv green">'+$m(caja.ingresos)+'</div></div><div class="m"><div class="ml">Gastos</div><div class="mv orange">'+$m(caja.gastos)+'</div></div><div class="m"><div class="ml">Morosos</div><div class="mv red">'+mor.length+'</div></div><div class="m"><div class="ml">Deuda total</div><div class="mv red">'+$m(td2)+'</div></div>'+(msgsN>0?'<div class="m"><div class="ml">Mensajes nuevos</div><div class="mv" style="color:var(--blue)">'+msgsN+'</div></div>':'')+'</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct">Vencimientos hoy</div></div>'+vH+'</div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct">Morosos</div><button class="btn bo bs" onclick="nav(\'morosos\')">Ver todos</button></div>'+(mor.length?'<table><thead><tr><th>Propietario</th><th>Unidad</th><th>Consorcio</th><th>Deuda</th></tr></thead><tbody>'+mH+'</tbody></table>':'<div class="empty" style="padding:16px">Sin morosos</div>')+'</div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct">Urgentes</div><button class="btn bo bs" onclick="nav(\'mantenimiento\')">Ver todos</button></div>'+(urg.length?'<table><thead><tr><th>Trabajo</th><th>Consorcio</th><th>Estado</th></tr></thead><tbody>'+uH+'</tbody></table>':'<div class="empty" style="padding:16px">Sin urgentes</div>')+'</div></div>';
+
+  // Grafico de barras: ultimos 6 meses
+  var meses6=[];
+  for(var i=5;i>=0;i--){var d2=new Date();d2.setMonth(d2.getMonth()-i);meses6.push(d2.toISOString().slice(0,7));}
+  var maxVal=0;
+  var mesData=meses6.map(function(m){
+    var pids=C.propietarios.map(function(p){return p.id;});
+    var ing=C.ingresos.filter(function(i){return i.fecha&&i.fecha.slice(0,7)===m;}).reduce(function(s,i){return s+Number(i.monto);},0);
+    var gas=C.gastos.filter(function(g){return g.fecha&&g.fecha.slice(0,7)===m;}).reduce(function(s,g){return s+Number(g.monto);},0);
+    if(ing>maxVal)maxVal=ing;if(gas>maxVal)maxVal=gas;
+    return {m:m,ing:ing,gas:gas};
+  });
+  var barH=mesData.map(function(d,idx){
+    var hi=maxVal>0?Math.round((d.ing/maxVal)*90):0;
+    var hg=maxVal>0?Math.round((d.gas/maxVal)*90):0;
+    var lbl=d.m.slice(5);
+    var delay=idx*0.1;
+    return '<div class="bar-group"><div class="bar-pair"><div class="bar" style="height:'+hi+'px;background:var(--green);animation-delay:'+delay+'s" title="Ingresos: '+$m(d.ing)+'"></div><div class="bar" style="height:'+hg+'px;background:var(--orange);animation-delay:'+(delay+0.05)+'s" title="Gastos: '+$m(d.gas)+'"></div></div><div class="bar-label">'+lbl+'</div></div>';
+  }).join('');
+  var barChart='<div class="chart-wrap"><div class="chart-title">Ingresos vs Gastos — ultimos 6 meses</div><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><span style="width:10px;height:10px;border-radius:2px;background:var(--green);display:inline-block"></span>Ingresos</span><span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><span style="width:10px;height:10px;border-radius:2px;background:var(--orange);display:inline-block"></span>Gastos</span></div><div class="bar-chart">'+barH+'</div></div>';
+
+  // Grafico de torta: categorias de gastos
+  var cats={};
+  C.gastos.forEach(function(g){var k=g.categoria||'Otro';cats[k]=(cats[k]||0)+Number(g.monto);});
+  var catArr=Object.keys(cats).map(function(k){return {k:k,v:cats[k]};}).sort(function(a,b){return b.v-a.v;}).slice(0,6);
+  var totalCat=catArr.reduce(function(s,c){return s+c.v;},0);
+  var colores=['#C9A84C','#2ECC71','#3498DB','#E74C3C','#E67E22','#9B59B6'];
+  var donutChart='';
+  if(catArr.length&&totalCat>0){
+    var offset=0;var r=40;var circ=2*Math.PI*r;
+    var segs=catArr.map(function(c,i){
+      var pct=c.v/totalCat;var dash=pct*circ;var gap=circ-dash;
+      var seg='<circle cx="55" cy="55" r="'+r+'" fill="none" stroke="'+colores[i]+'" stroke-width="18" stroke-dasharray="'+dash.toFixed(1)+' '+gap.toFixed(1)+'" stroke-dashoffset="'+(-(offset*circ)).toFixed(1)+'" style="transition:stroke-dashoffset .8s ease;animation:donut-spin .8s ease both;animation-delay:'+(i*0.12)+'s" transform="rotate(-90 55 55)"/>';
+      offset+=pct;return seg;
+    }).join('');
+    var legend=catArr.map(function(c,i){return '<div class="legend-item"><span class="legend-dot" style="background:'+colores[i]+'"></span><span>'+c.k+'</span><span style="margin-left:auto;color:var(--text);font-weight:500">'+Math.round(c.v/totalCat*100)+'%</span></div>';}).join('');
+    donutChart='<div class="chart-wrap"><div class="chart-title">Distribucion de gastos por categoria</div><div class="donut-wrap"><svg width="110" height="110" style="flex-shrink:0"><circle cx="55" cy="55" r="40" fill="none" stroke="#2a2a2a" stroke-width="18"/>'+segs+'<text x="55" y="58" text-anchor="middle" fill="#F5F5F0" font-size="11" font-weight="600">'+catArr.length+' cat.</text></svg><div class="donut-legend">'+legend+'</div></div></div>';
+  } else {
+    donutChart='<div class="chart-wrap"><div class="chart-title">Distribucion de gastos por categoria</div><div class="empty" style="padding:20px">Sin datos</div></div>';
+  }
+
+  // Grafico de linea: evolucion de caja
+  var lineData=meses6.map(function(m){
+    var ing=C.ingresos.filter(function(i){return i.fecha&&i.fecha.slice(0,7)===m;}).reduce(function(s,i){return s+Number(i.monto);},0);
+    var gas=C.gastos.filter(function(g){return g.fecha&&g.fecha.slice(0,7)===m;}).reduce(function(s,i){return s+Number(i.monto);},0);
+    return ing-gas;
+  });
+  var minL=Math.min.apply(null,lineData),maxL=Math.max.apply(null,lineData);
+  var rangeL=maxL-minL||1;
+  var W=300,H=90,pad=10;
+  var pts=lineData.map(function(v,i){
+    var x=pad+(i/(lineData.length-1||1))*(W-pad*2);
+    var y=H-pad-((v-minL)/rangeL)*(H-pad*2);
+    return x.toFixed(1)+','+y.toFixed(1);
+  });
+  var pathD='M'+pts.join(' L');
+  var areaD=pathD+' L'+(W-pad)+','+(H-pad)+' L'+pad+','+(H-pad)+' Z';
+  var lineLabels=meses6.map(function(m,i){
+    var x=pad+(i/(meses6.length-1||1))*(W-pad*2);
+    return '<text x="'+x.toFixed(1)+'" y="'+(H+2)+'" text-anchor="middle" fill="#6E6D68" font-size="9">'+m.slice(5)+'</text>';
+  }).join('');
+  var lineChart='<div class="chart-wrap"><div class="chart-title">Evolucion de caja mensual</div><div class="line-chart"><svg viewBox="0 0 '+(W+10)+' '+(H+14)+'" preserveAspectRatio="none"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C9A84C" stop-opacity=".3"/><stop offset="100%" stop-color="#C9A84C" stop-opacity="0"/></linearGradient></defs><path d="'+areaD+'" fill="url(#lg)" class="area-path"/><path d="'+pathD+'" class="line-path"/>'+lineLabels+'</svg></div></div>';
+
+  return '<div class="mg"><div class="m"><div class="ml">Consorcios</div><div class="mv gold">'+C.consorcios.length+'</div></div><div class="m"><div class="ml">Caja total</div><div class="mv '+cajaCls+'">'+$m(caja.saldo)+'</div></div><div class="m"><div class="ml">Ingresos</div><div class="mv green">'+$m(caja.ingresos)+'</div></div><div class="m"><div class="ml">Gastos</div><div class="mv orange">'+$m(caja.gastos)+'</div></div><div class="m"><div class="ml">Morosos</div><div class="mv red">'+mor.length+'</div></div><div class="m"><div class="ml">Deuda total</div><div class="mv red">'+$m(td2)+'</div></div>'+(msgsN>0?'<div class="m"><div class="ml">Mensajes nuevos</div><div class="mv" style="color:var(--blue)">'+msgsN+'</div></div>':'')+'</div>'
+  +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:16px">'+barChart+donutChart+lineChart+'</div>'
+  +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct">Vencimientos hoy</div></div>'+vH+'</div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct">Morosos</div><button class="btn bo bs" onclick="nav(\'morosos\')">Ver todos</button></div>'+(mor.length?'<table><thead><tr><th>Propietario</th><th>Unidad</th><th>Consorcio</th><th>Deuda</th></tr></thead><tbody>'+mH+'</tbody></table>':'<div class="empty" style="padding:16px">Sin morosos</div>')+'</div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct">Urgentes</div><button class="btn bo bs" onclick="nav(\'mantenimiento\')">Ver todos</button></div>'+(urg.length?'<table><thead><tr><th>Trabajo</th><th>Consorcio</th><th>Estado</th></tr></thead><tbody>'+uH+'</tbody></table>':'<div class="empty" style="padding:16px">Sin urgentes</div>')+'</div></div>';
 }
 
 function pgCaja(){
