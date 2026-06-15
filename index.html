@@ -97,8 +97,18 @@ td.p{color:var(--text);font-weight:500}
 .liq-row{display:flex;justify-content:space-between;padding:7px 12px;border-bottom:1px solid #1e1e1e;font-size:13px}
 .liq-row:last-child{border-bottom:none}
 .liq-tot{display:flex;justify-content:space-between;padding:10px 12px;font-weight:600;font-size:14px;border-top:2px solid #2a2a2a;margin-top:4px}
-.cb{height:8px;border-radius:4px;background:var(--dark3);overflow:hidden;margin-top:6px}
-.cf{height:100%;border-radius:4px}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-220px);transition:transform .25s ease;box-shadow:4px 0 20px rgba(0,0,0,.5)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0!important}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+  .overlay.open{display:block}
+  .hbtn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:var(--dark3);border:1px solid #3a3a3a;border-radius:var(--r);cursor:pointer;font-size:18px;flex-shrink:0}
+}
+@media(min-width:769px){
+  .hbtn{display:none}
+  .overlay{display:none!important}
+}
 </style>
 </head>
 <body>
@@ -150,6 +160,7 @@ td.p{color:var(--text);font-weight:500}
   <main class="main">
     <div class="topbar">
       <div class="topbar-t">
+        <button class="hbtn" onclick="toggleMenu()">☰</button>
         <span id="bw" style="display:none"><button class="bbk" onclick="goBack()">Volver</button></span>
         <span id="pt">Dashboard</span>
       </div>
@@ -163,7 +174,7 @@ td.p{color:var(--text);font-weight:500}
     <div class="content" id="ct"><div class="empty"><span class="spin"></span>Conectando...</div></div>
   </main>
 </div>
-<div id="modal" class="mo" style="display:none" onclick="cmo(event)"><div class="mi" id="mi"></div></div>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div> style="display:none" onclick="cmo(event)"><div class="mi" id="mi"></div></div>
 <div id="toast" class="toast" style="display:none"></div>
 
 <script>
@@ -176,6 +187,12 @@ var CFG={on:true,tasa:10,dia:10};
 try{var _c=localStorage.getItem('pc');if(_c)CFG=JSON.parse(_c);}catch(e){}
 function saveCFG(){try{localStorage.setItem('pc',JSON.stringify(CFG));}catch(e){}}
 
+function toggleMenu(){
+  var sb=document.getElementById('sb');
+  var ov=document.getElementById('overlay');
+  sb.classList.toggle('open');
+  ov.classList.toggle('open');
+}
 function slt(t){
   document.getElementById('lta').classList.toggle('active',t==='a');
   document.getElementById('ltp').classList.toggle('active',t==='p');
@@ -319,6 +336,10 @@ function nav(page,back){
   document.getElementById('bw').style.display=back?'inline':'none';
   var pages={dashboard:pgD,caja:pgCaja,consorcios:pgC,gastos:pgG,ingresos:pgI,morosos:pgM,liquidacion:pgL,mantenimiento:pgMt,recordatorios:pgR,mensajes:pgMsg,comunicaciones:pgComm,clientes:pgCli,configuracion:pgCfg,portal:pgPortal};
   document.getElementById('ct').innerHTML=(pages[page]||pgD)();
+  var sb=document.getElementById('sb');
+  var ov=document.getElementById('overlay');
+  if(sb)sb.classList.remove('open');
+  if(ov)ov.classList.remove('open');
   var mor=C.propietarios.filter(function(p){return calcD(p.id).total>0;});
   var venc=C.recordatorios.filter(function(r){return r.activo&&r.dia===dom();});
   var msg='';
