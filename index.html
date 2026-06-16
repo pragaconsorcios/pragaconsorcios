@@ -707,7 +707,10 @@ function pgCaja(){
 function pgL(){
   var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'">'+c.nombre+'</option>';}).join('');
   return '<div class="card" style="margin-bottom:16px"><div class="card-title" style="margin-bottom:16px">Generar liquidacion</div><div class="fr"><div class="fg"><label>Consorcio</label><select id="lc2">'+(opts||'<option>Sin consorcios</option>')+'</select></div><div class="fg"><label>Periodo</label><input type="month" id="lm" value="'+ma()+'"></div></div><button class="btn bg" onclick="genLiq()">Generar liquidacion</button></div>'
-    +'<div class="al ai" style="cursor:pointer" onclick="pgImportarLiq()">📥 <strong>Importar liquidacion Genova — Mayo 2026</strong> — Carga automatica de gastos y pagos desde la liquidacion oficial. Hacé clic para ver el detalle.</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:16px">'
+    +'<div class="al ai" style="cursor:pointer;margin-bottom:0" onclick="pgCargaInicialGenova()">🗂 <strong>Carga inicial GENOVA</strong><br><span style="font-size:11px">Estado al 31/05/2026 con saldos anteriores</span></div>'
+    +'<div class="al as" style="cursor:pointer;margin-bottom:0" onclick="pgImportarLiq()">📥 <strong>Importar gastos Mayo 2026</strong><br><span style="font-size:11px">Carga los 6 gastos de la liquidacion</span></div>'
+    +'</div>'
     +'<div id="lr"></div>';
 }
 function genLiq(){
@@ -916,7 +919,138 @@ function showPropPortal(pid){
   var cH=comms.map(function(x){return '<div style="padding:12px 0;border-bottom:1px solid #181820"><div style="font-size:13px;font-weight:600">'+x.titulo+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.6">'+x.cuerpo+'</div></div>';}).join('');
   document.getElementById('ct').innerHTML='<div style="max-width:720px;margin:0 auto"><div class="card"><div style="display:flex;align-items:center;gap:16px;margin-bottom:20px"><div class="av" style="width:52px;height:52px;font-size:18px">'+p.nombre.slice(0,2).toUpperCase()+'</div><div><div style="font-size:17px;font-weight:700">'+p.nombre+'</div><div style="font-size:12px;color:var(--text3);margin-top:3px">'+(c?c.nombre:'-')+' · '+(p.piso_dpto||p.unidad||'-')+'</div></div></div><div class="stat-grid"><div class="m" style="padding:14px"><div class="ml">Saldo</div><div class="mv" style="color:'+(d.saldo>0?'var(--orange)':'var(--green)')+'">'+$m(d.saldo)+'</div></div><div class="m" style="padding:14px"><div class="ml">Interes mora</div><div class="mv" style="color:'+(d.intereses>0?'var(--red)':'var(--text3)')+'">'+$m(d.intereses)+'</div></div><div class="m" style="padding:14px"><div class="ml">Total deuda</div><div class="mv" style="color:'+(d.total>0?'var(--red)':'var(--green)')+'">'+$m(d.total)+'</div></div></div>'+(d.total>0?'<div class="al aw" style="margin-top:16px;margin-bottom:0">Tenes deuda pendiente. Contacta a la administracion.</div>':'<div class="al as" style="margin-top:16px;margin-bottom:0">Estas al dia. ✓</div>')+'</div><div class="card"><div class="card-title" style="margin-bottom:14px">Mis mensajes</div>'+(msgs.length?mH:'<div class="empty">Sin mensajes</div>')+'<hr style="border-color:#1e1e2a;margin:16px 0"><div style="font-size:13px;font-weight:600;margin-bottom:12px">Enviar mensaje a la administracion</div><div class="fg" style="margin-bottom:10px"><label>Asunto</label><input id="msg-asunto" placeholder="Consulta o comentario"></div><div class="fg" style="margin-bottom:12px"><label>Mensaje</label><textarea id="msg-cuerpo" rows="3"></textarea></div><button class="btn bg" onclick="eMsgP(\''+pid+'\')">Enviar</button></div><div class="card"><div class="card-title" style="margin-bottom:14px">Historial de pagos</div>'+(pagos.length?'<table><thead><tr><th>Monto</th><th>Fecha</th><th>Concepto</th><th>Comprobante</th><th>Pago</th></tr></thead><tbody>'+pH+'</tbody></table>':'<div class="empty">Sin pagos</div>')+'</div><div class="card"><div class="card-title" style="margin-bottom:14px">Comunicaciones del consorcio</div>'+(comms.length?cH:'<div class="empty">Sin comunicaciones</div>')+'</div><div style="text-align:center;margin-top:20px"><button class="btn bo" onclick="logout()">Cerrar sesion</button></div></div>';
 }
-// ===== IMPORTAR LIQUIDACION GENOVA MAYO 2026 =====
+// ===== CARGA INICIAL GENOVA — ESTADO AL 31/05/2026 =====
+var GENOVA_DATA=[
+  {nombre:'RIZZETTO LYDIA',   saldo_ant:22500,  pago_mayo:37500, cuota:60000},
+  {nombre:'CAMPOS CARMEN',    saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {nombre:'BOTTO GUIDO',      saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {nombre:'GARCIA CRISTINA',  saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {nombre:'FABRE MARIA INES', saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {nombre:'RIZZETTO DANIEL',  saldo_ant:120000, pago_mayo:60000, cuota:60000},
+  {nombre:'CONDE CECILIA',    saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {nombre:'LUCERO ESTELA',    saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {nombre:'RIZZETTO JORGE',   saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {nombre:'QUIROGA MARIANA',  saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {nombre:'BAZAN AMALIA',     saldo_ant:265544, pago_mayo:0,     cuota:60000},
+  {nombre:'CERDERA ELSA',     saldo_ant:60000,  pago_mayo:0,     cuota:60000},
+  {nombre:'REINOSO ALFREDO',  saldo_ant:60000,  pago_mayo:0,     cuota:60000},
+  {nombre:'SANTOLAYA LORENA', saldo_ant:60000,  pago_mayo:0,     cuota:60000},
+  {nombre:'SLAVUTZKY PAULA',  saldo_ant:0,      pago_mayo:60000, cuota:60000}
+];
+
+function matchProp(ps, nombre){
+  var parts=nombre.toLowerCase().split(' ').filter(Boolean);
+  // buscar coincidencia exacta primero
+  var found=ps.find(function(p){
+    return p.nombre&&p.nombre.toLowerCase().replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u')
+      ===nombre.toLowerCase().replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u');
+  });
+  if(found)return found;
+  // buscar por primer apellido + primer nombre
+  return ps.find(function(p){
+    if(!p.nombre)return false;
+    var pn=p.nombre.toLowerCase().replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u');
+    return parts.every(function(part){return pn.indexOf(part)>=0;});
+  })||ps.find(function(p){
+    if(!p.nombre)return false;
+    var pn=p.nombre.toLowerCase();
+    return pn.indexOf(parts[0])>=0;
+  });
+}
+
+function pgCargaInicialGenova(){
+  var cons=C.consorcios.find(function(c){return c.nombre&&c.nombre.toUpperCase().indexOf('GENOVA')>=0;});
+  if(!cons){toast('No se encontro el consorcio GENOVA');return;}
+  var ps=C.propietarios.filter(function(p){return p.consorcio_id===cons.id;});
+
+  var rows=GENOVA_DATA.map(function(d){
+    var prop=matchProp(ps,d.nombre);
+    var deudaFinal=d.saldo_ant+d.cuota-d.pago_mayo; // deuda al cierre de mayo
+    var estado=deudaFinal<=0?'<span class="pill pg">Al dia</span>':'<span class="pill pr">Debe '+$m(deudaFinal)+'</span>';
+    var match=prop?'<span class="pill pg">✓ '+prop.nombre+'</span>':'<span class="pill pr">⚠ No encontrado</span>';
+    return '<tr>'
+      +'<td class="p">'+d.nombre+'</td>'
+      +'<td style="color:var(--orange)">'+$m(d.saldo_ant)+'</td>'
+      +'<td style="color:var(--blue)">'+$m(d.cuota)+'</td>'
+      +'<td style="color:var(--green)">'+$m(d.pago_mayo)+'</td>'
+      +'<td>'+estado+'</td>'
+      +'<td>'+match+'</td>'
+      +'</tr>';
+  }).join('');
+
+  om('<div class="mt">Carga inicial GENOVA — Al 31/05/2026 <button class="btn bo bs" onclick="cm()">✕</button></div>'
+    +'<div class="al ai" style="margin-bottom:16px">Esto registrara el estado de deuda de cada propietario al cierre de mayo 2026, incluyendo saldos anteriores. Se generaran registros de "saldo anterior" y "pago mayo" para cada uno.</div>'
+    +'<div style="overflow-x:auto;margin-bottom:16px"><table><thead><tr><th>Propietario</th><th>Saldo ant.</th><th>Cuota mayo</th><th>Pago</th><th>Estado</th><th>Match</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    +'<div class="al aw" style="margin-bottom:16px">⚠ Esto eliminara los ingresos existentes del consorcio GENOVA antes de cargar el estado inicial. Solo ejecutar una vez.</div>'
+    +'<button class="btn bg" onclick="ejecutarCargaGenova()" style="width:100%;font-size:14px">✓ Confirmar carga inicial</button>');
+}
+
+function ejecutarCargaGenova(){
+  var cons=C.consorcios.find(function(c){return c.nombre&&c.nombre.toUpperCase().indexOf('GENOVA')>=0;});
+  if(!cons)return toast('No se encontro GENOVA');
+  var ps=C.propietarios.filter(function(p){return p.consorcio_id===cons.id;});
+  var promesas=[];
+
+  GENOVA_DATA.forEach(function(d){
+    var prop=matchProp(ps,d.nombre);
+    if(!prop){console.warn('No encontrado:',d.nombre);return;}
+
+    // 1. Actualizar cuota_fija del propietario
+    promesas.push(dpa('propietarios',prop.id,{cuota_fija:d.cuota}).then(function(){
+      prop.cuota_fija=d.cuota;
+    }));
+
+    // 2. Si tenia saldo anterior, registrarlo como "cuota pendiente anterior"
+    if(d.saldo_ant>0){
+      var oAnt={id:uid(),propietario_id:prop.id,monto:-d.saldo_ant,fecha:'2026-04-30',concepto:'Deuda anterior al 30/04/2026',comprobante:'',pagado_por:'Sistema - carga inicial'};
+      // Lo registramos como deuda: usamos monto negativo en un campo especial
+      // En realidad: registramos la CUOTA emitida como un egreso del propietario
+      // Mejor: registrar saldo_ant como "cuota emitida" no pagada
+      var oDeuda={id:uid(),propietario_id:prop.id,monto:0,fecha:'2026-04-30',concepto:'Saldo anterior al 30/04/2026',comprobante:'',pagado_por:'Sistema',saldo_anterior:d.saldo_ant};
+      promesas.push(dp('ingresos',oDeuda).then(function(r){if(r.ok)C.ingresos.push(oDeuda);}));
+    }
+
+    // 3. Registrar cuota de mayo emitida
+    var oCuota={id:uid(),propietario_id:prop.id,monto:0,fecha:'2026-05-01',concepto:'Cuota emitida Mayo 2026',comprobante:'',pagado_por:'Sistema',cuota_emitida:d.cuota};
+    promesas.push(dp('ingresos',oCuota).then(function(r){if(r.ok)C.ingresos.push(oCuota);}));
+
+    // 4. Registrar pago de mayo si lo hizo
+    if(d.pago_mayo>0){
+      var oPago={id:uid(),propietario_id:prop.id,monto:d.pago_mayo,fecha:'2026-05-31',concepto:'Pago expensa Mayo 2026',comprobante:'',pagado_por:'Propietario'};
+      promesas.push(dp('ingresos',oPago).then(function(r){if(r.ok)C.ingresos.push(oPago);}));
+    }
+  });
+
+  Promise.all(promesas).then(function(){
+    cm();
+    nav('ingresos');
+    toast('Estado inicial GENOVA cargado correctamente');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,60));});
+}
+
+// Recalculo de deuda con nuevo modelo
+function calcD(pid){
+  var p=C.propietarios.find(function(x){return x.id===pid;});
+  if(!p)return {total:0,intereses:0,saldo:0};
+  var cuotaMes=Number(p.cuota_fija||0);
+  if(cuotaMes===0)return {total:0,intereses:0,saldo:0};
+
+  var registros=C.ingresos.filter(function(i){return i.propietario_id===pid;});
+
+  // Sumar saldos anteriores
+  var deudaAnterior=registros.reduce(function(s,i){return s+Number(i.saldo_anterior||0);},0);
+
+  // Sumar cuotas emitidas
+  var cuotasEmitidas=registros.reduce(function(s,i){return s+Number(i.cuota_emitida||0);},0);
+
+  // Sumar pagos reales (monto > 0 y no es sistema)
+  var pagados=registros.filter(function(i){return Number(i.monto)>0&&i.pagado_por!=='Sistema';}).reduce(function(s,i){return s+Number(i.monto);},0);
+
+  var saldo=deudaAnterior+cuotasEmitidas-pagados;
+  if(saldo<=0)return {total:0,intereses:0,saldo:0};
+  var it=CFG.on&&dom()>=CFG.dia?Math.round(saldo*(CFG.tasa/100)):0;
+  return {total:Math.round(saldo+it),intereses:it,saldo:Math.round(saldo)};
+}
 function importarLiqGenova(){
   var cons=C.consorcios.find(function(c){return c.nombre&&c.nombre.toUpperCase().indexOf('GENOVA')>=0;});
   if(!cons){toast('No se encontro el consorcio GENOVA');return;}
