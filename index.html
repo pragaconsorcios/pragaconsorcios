@@ -894,7 +894,51 @@ function mECli(id){var c=C.clientes.find(function(x){return x.id===id;});om('<di
 function uCli(id){var o={nombre:document.getElementById('cln').value.trim(),rol:document.getElementById('clr').value,ubicacion:document.getElementById('clu').value,unidades:document.getElementById('clun').value,telefono:document.getElementById('clt').value,email:document.getElementById('cle').value,problemas:document.getElementById('clp').value,estado:document.getElementById('clest').value};dpa('clientes',id,o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});var c=C.clientes.find(function(x){return x.id===id;});if(c)Object.assign(c,o);cm();nav('clientes');toast('Actualizado');}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
 function sCli(){var n=document.getElementById('cln').value.trim();if(!n)return toast('Ingresa el nombre');var o={id:uid(),nombre:n,rol:document.getElementById('clr').value,ubicacion:document.getElementById('clu').value,unidades:document.getElementById('clun').value,telefono:document.getElementById('clt').value,email:document.getElementById('cle').value,problemas:document.getElementById('clp').value,reunion:document.getElementById('clm').value,estado:'nuevo'};dp('clientes',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});C.clientes.unshift(o);nav('clientes');toast('Lead guardado');}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
 
-function pgCfg(){return '<div class="card"><div class="card-title" style="margin-bottom:20px">Configuracion general</div><div style="border-bottom:1px solid #1e1e2a;padding-bottom:20px;margin-bottom:20px"><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px">Intereses por mora</div><div class="fr"><div class="fg"><label>Aplicar intereses</label><select id="cfg-on" onchange="tCI()"><option value="1"'+(CFG.on?' selected':'')+'>Si, aplicar intereses</option><option value="0"'+(!CFG.on?' selected':'')+'>No, sin intereses</option></select></div><div class="fg" id="cfg-tw" style="'+(CFG.on?'':'opacity:.4;pointer-events:none')+'"><label>Tasa de interes (%)</label><input id="cfg-t" type="number" step="0.1" value="'+CFG.tasa+'" min="0" max="100"></div><div class="fg" id="cfg-dw" style="'+(CFG.on?'':'opacity:.4;pointer-events:none')+'"><label>Aplicar a partir del dia</label><input id="cfg-d" type="number" value="'+CFG.dia+'" min="1" max="31"></div></div><div class="al '+(CFG.on?'aw':'as')+'" style="margin-bottom:0">'+(CFG.on?'Se aplica '+CFG.tasa+'% desde el dia '+CFG.dia+' de cada mes.':'Intereses desactivados.')+'</div></div><button class="btn bg" onclick="sCfg()">Guardar configuracion</button></div>';}
+function pgCfg(){
+  return '<div class="card"><div class="card-title" style="margin-bottom:20px">Configuracion general</div>'
+    +'<div style="border-bottom:1px solid #1e1e2a;padding-bottom:20px;margin-bottom:20px"><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px">Intereses por mora</div><div class="fr"><div class="fg"><label>Aplicar intereses</label><select id="cfg-on" onchange="tCI()"><option value="1"'+(CFG.on?' selected':'')+'>Si, aplicar intereses</option><option value="0"'+(!CFG.on?' selected':'')+'>No, sin intereses</option></select></div><div class="fg" id="cfg-tw" style="'+(CFG.on?'':'opacity:.4;pointer-events:none')+'"><label>Tasa de interes (%)</label><input id="cfg-t" type="number" step="0.1" value="'+CFG.tasa+'" min="0" max="100"></div><div class="fg" id="cfg-dw" style="'+(CFG.on?'':'opacity:.4;pointer-events:none')+'"><label>Aplicar a partir del dia</label><input id="cfg-d" type="number" value="'+CFG.dia+'" min="1" max="31"></div></div><div class="al '+(CFG.on?'aw':'as')+'" style="margin-bottom:0">'+(CFG.on?'Se aplica '+CFG.tasa+'% desde el dia '+CFG.dia+' de cada mes.':'Intereses desactivados.')+'</div></div>'
+    +'<button class="btn bg" onclick="sCfg()" style="margin-bottom:28px">Guardar configuracion</button>'
+    +'<div style="border-top:1px solid #1e1e2a;padding-top:20px">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px">⚠ Zona peligrosa</div>'
+    +'<div style="font-size:12px;color:var(--text3);margin-bottom:14px">Estas acciones son irreversibles. Usalas solo si sabes lo que estas haciendo.</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:10px">'
+    +'<button class="btn bd" onclick="borrarTodo(\'ingresos\')">🗑 Borrar todos los ingresos</button>'
+    +'<button class="btn bd" onclick="borrarTodo(\'gastos\')">🗑 Borrar todos los gastos</button>'
+    +'<button class="btn bd" onclick="borrarTodoGastosPorConsorcio()">🗑 Borrar gastos GENOVA</button>'
+    +'<button class="btn bd" onclick="borrarTodo(\'ingresos\')&&borrarTodo(\'gastos\')">🗑 Borrar ingresos y gastos</button>'
+    +'</div></div></div>';
+}
+
+function borrarTodo(tabla){
+  if(!confirm('Vas a BORRAR TODOS los registros de '+tabla+'. Esta accion es IRREVERSIBLE. Continuar?'))return;
+  fetch(SU+'/rest/v1/'+tabla+'?id=neq.null',{
+    method:'DELETE',
+    headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'}
+  }).then(function(r){
+    if(r.ok||r.status===204){
+      C[tabla]=[];
+      toast('Todos los '+tabla+' eliminados');
+      nav('configuracion');
+    } else {
+      r.text().then(function(t){toast('Error: '+t.slice(0,80));});
+    }
+  }).catch(function(e){toast('Error: '+e.message);});
+}
+
+function borrarTodoGastosPorConsorcio(){
+  var cons=C.consorcios.find(function(c){return c.nombre&&c.nombre.toUpperCase().indexOf('GENOVA')>=0;});
+  if(!cons)return toast('No se encontro GENOVA');
+  if(!confirm('Borrar todos los gastos e ingresos del consorcio GENOVA?'))return;
+  Promise.all([
+    fetch(SU+'/rest/v1/ingresos?id=neq.null',{method:'DELETE',headers:{'apikey':SK,'Authorization':'Bearer '+SK}}),
+    fetch(SU+'/rest/v1/gastos?consorcio_id=eq.'+cons.id,{method:'DELETE',headers:{'apikey':SK,'Authorization':'Bearer '+SK}})
+  ]).then(function(){
+    C.ingresos=[];
+    C.gastos=C.gastos.filter(function(g){return g.consorcio_id!==cons.id;});
+    toast('Datos de GENOVA eliminados');
+    nav('configuracion');
+  }).catch(function(e){toast('Error: '+e.message);});
+}
 function tCI(){var on=document.getElementById('cfg-on').value==='1';document.getElementById('cfg-tw').style.opacity=on?'1':'0.4';document.getElementById('cfg-tw').style.pointerEvents=on?'auto':'none';document.getElementById('cfg-dw').style.opacity=on?'1':'0.4';document.getElementById('cfg-dw').style.pointerEvents=on?'auto':'none';}
 function sCfg(){CFG.on=document.getElementById('cfg-on').value==='1';CFG.tasa=parseFloat(document.getElementById('cfg-t').value)||10;CFG.dia=parseInt(document.getElementById('cfg-d').value)||10;saveCFG();nav('configuracion');toast('Configuracion guardada');}
 
