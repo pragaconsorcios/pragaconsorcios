@@ -415,15 +415,21 @@ function sp2(ps){
   });
 }
 
+// ============================================================
+// calcDeudaProp — CORREGIDO
+// Usa parseFloat con trim() para evitar bugs con espacios en concepto
+// ============================================================
 function calcDeudaProp(pid){
   var regs=C.ingresos.filter(function(i){return i.propietario_id===pid;});
   var deudaAnt=0,cuotasEmit=0,pagados=0;
   regs.forEach(function(i){
-    var con=i.concepto||'';
+    var con=(i.concepto||'').trim();
     if(con.indexOf('SALDO_ANTERIOR:')===0){
-      deudaAnt+=Number(con.replace('SALDO_ANTERIOR:',''))||0;
+      var val=parseFloat(con.replace('SALDO_ANTERIOR:','').trim());
+      if(!isNaN(val)&&val>0) deudaAnt+=val;
     } else if(con.indexOf('CUOTA_EMITIDA:')===0){
-      cuotasEmit+=Number(con.replace('CUOTA_EMITIDA:',''))||0;
+      var val2=parseFloat(con.replace('CUOTA_EMITIDA:','').trim());
+      if(!isNaN(val2)&&val2>0) cuotasEmit+=val2;
     } else if(Number(i.monto)>0&&i.pagado_por!=='Sistema'){
       pagados+=Number(i.monto);
     }
@@ -565,7 +571,7 @@ function pgCaja(){
 // ===== INGRESOS =====
 function pgI(){
   var hist=C.ingresos.filter(function(i){
-    var con=i.concepto||'';
+    var con=(i.concepto||'').trim();
     return Number(i.monto)>0&&i.pagado_por!=='Sistema'&&con.indexOf('SALDO_ANTERIOR:')<0&&con.indexOf('CUOTA_EMITIDA:')<0;
   }).sort(function(a,b){return b.fecha>a.fecha?1:-1;});
   var totalGeneral=hist.reduce(function(s,i){return s+Number(i.monto);},0);
@@ -596,13 +602,33 @@ function pgDeudas(){
       if(d.total>0){totalDeuda+=d.total;totalMorosos++;}
       var pagados=C.ingresos.filter(function(i){return i.propietario_id===p.id&&Number(i.monto)>0&&i.pagado_por!=='Sistema';}).reduce(function(s,i){return s+Number(i.monto);},0);
       var ult=C.ingresos.filter(function(i){return i.propietario_id===p.id&&Number(i.monto)>0&&i.pagado_por!=='Sistema';}).sort(function(a,b){return b.fecha>a.fecha?1:-1;})[0];
-      var preexist=C.ingresos.filter(function(i){return i.propietario_id===p.id&&(i.concepto||'').indexOf('SALDO_ANTERIOR:')===0;});
-      var preH=preexist.map(function(i){
-        var mm=Number((i.concepto||'').replace('SALDO_ANTERIOR:',''))||0;
-        var dc=(i.comprobante||'').replace(/'/g,'');
-        return '<div style="font-size:11px;color:var(--orange);margin-top:4px;display:flex;align-items:center;gap:6px"><span>📌 '+$m(mm)+(dc?' — '+dc:'')+'</span><button class="btn bo" style="padding:2px 7px;font-size:10px" onclick="editDeudaPrex(\''+i.id+'\','+mm+',\''+dc+'\')">✎</button><button class="btn bd" style="padding:2px 7px;font-size:10px" onclick="delDeudaPrex(\''+i.id+'\')">✕</button></div>';
-      }).join('');
-      return '<tr><td class="p"><div>'+p.nombre+preH+'</div></td><td>'+(p.piso_dpto||p.unidad||'-')+'</td><td style="color:var(--gold)">'+$m(Number(p.cuota_fija||0))+'</td><td style="color:var(--green)">'+$m(pagados)+'</td><td style="color:'+(d.saldo>0?'var(--orange)':'var(--text3)')+'">'+( d.saldo>0?$m(d.saldo):'-')+'</td><td style="color:'+(d.intereses>0?'var(--red)':'var(--text3)')+'">'+( d.intereses>0?$m(d.intereses):'-')+'</td><td style="color:'+(d.total>0?'var(--red)':'var(--green)')+';font-weight:700">'+(d.total>0?$m(d.total):'Al dia ✓')+'</td><td style="font-size:11px;color:var(--text3)">'+(ult?ult.fecha:'-')+'</td><td><button class="btn bgr bs" onclick="mPago(\''+p.id+'\')">Pago</button></td></tr>';
+
+      // Deudas preexistentes — CORREGIDO: parseFloat con trim
+      var preexist=C.ingresos.filter(function(i){
+        return i.propietario_id===p.id&&typeof i.concepto==='string'&&i.concepto.trim().indexOf('SALDO_ANTERIOR:')===0;
+      });
+      var preH=preexist.length
+        ? '<div style="margin-top:5px">'+preexist.map(function(i){
+            var mm=parseFloat((i.concepto||'').replace('SALDO_ANTERIOR:','').trim())||0;
+            var dc=(i.comprobante||'').replace(/\\/g,'').replace(/'/g,'\u2019');
+            var fch=i.fecha?' · '+i.fecha:'';
+            return '<div style="font-size:11px;color:var(--orange);display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px">'
+              +'<span>📌 '+$m(mm)+(dc?' — '+dc:'')+fch+'</span>'
+              +'<button class="btn bo" style="padding:2px 7px;font-size:10px" onclick="editDeudaPrex(\''+i.id+'\','+mm+',\''+dc.replace(/'/g,"\\'")+'\')" >✎</button>'
+              +'<button class="btn bd" style="padding:2px 7px;font-size:10px" onclick="delDeudaPrex(\''+i.id+'\')">✕</button>'
+              +'</div>';
+          }).join('')+'</div>'
+        : '';
+
+      return '<tr><td class="p"><div>'+p.nombre+preH+'</div></td>'
+        +'<td>'+(p.piso_dpto||p.unidad||'-')+'</td>'
+        +'<td style="color:var(--gold)">'+$m(Number(p.cuota_fija||0))+'</td>'
+        +'<td style="color:var(--green)">'+$m(pagados)+'</td>'
+        +'<td style="color:'+(d.saldo>0?'var(--orange)':'var(--text3)')+'">'+( d.saldo>0?$m(d.saldo):'-')+'</td>'
+        +'<td style="color:'+(d.intereses>0?'var(--red)':'var(--text3)')+'">'+( d.intereses>0?$m(d.intereses):'-')+'</td>'
+        +'<td style="color:'+(d.total>0?'var(--red)':'var(--green)')+';font-weight:700">'+(d.total>0?$m(d.total):'Al dia ✓')+'</td>'
+        +'<td style="font-size:11px;color:var(--text3)">'+(ult?ult.fecha:'-')+'</td>'
+        +'<td><button class="btn bgr bs" onclick="mPago(\''+p.id+'\')">Pago</button></td></tr>';
     }).join('');
     return '<div class="card" style="margin-bottom:16px"><div class="card-head"><div><div class="card-title">'+cons.nombre+'</div><div class="card-sub">'+(cons.direccion||'')+'</div></div></div><div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Cuota</th><th>Pagado</th><th>Saldo</th><th>Interes</th><th>Total deuda</th><th>Ult. pago</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
   }).join('');
@@ -612,19 +638,28 @@ function pgDeudas(){
     +consCols;
 }
 
+// ===== DEUDAS PREEXISTENTES — CORREGIDAS =====
 function mDeudaPrex(){
   var opts=C.propietarios.map(function(p){var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});return '<option value="'+p.id+'">'+p.nombre+' — '+(p.piso_dpto||p.unidad||'-')+(c?' ('+c.nombre+')':'')+'</option>';}).join('');
   if(!opts)return toast('Sin propietarios');
-  om('<div class="mt">Cargar deuda preexistente <button class="btn bo bs" onclick="cm()">✕</button></div><div class="al ai" style="margin-bottom:16px">Registra deuda que existia antes de usar la plataforma.</div><div class="fg" style="margin-bottom:12px"><label>Propietario</label><select id="dp-prop">'+opts+'</select></div><div class="fr"><div class="fg"><label>Monto ($)</label><input id="dp-monto" type="number" placeholder="60000"></div><div class="fg"><label>Fecha de origen</label><input id="dp-fecha" type="date" value="2026-04-30"></div></div><div class="fg" style="margin-bottom:16px"><label>Descripcion</label><input id="dp-desc" value="Deuda expensas anteriores"></div><button class="btn bg" onclick="sDeudaPrexModal()" style="width:100%">Cargar deuda</button>');
+  om('<div class="mt">Cargar deuda preexistente <button class="btn bo bs" onclick="cm()">✕</button></div>'
+    +'<div class="al ai" style="margin-bottom:16px">Registra deuda que existia antes de usar la plataforma.</div>'
+    +'<div class="fg" style="margin-bottom:12px"><label>Propietario</label><select id="dp-prop">'+opts+'</select></div>'
+    +'<div class="fr">'
+    +'<div class="fg"><label>Monto ($)</label><input id="dp-monto" type="number" placeholder="60000"></div>'
+    +'<div class="fg"><label>Fecha de origen</label><input id="dp-fecha" type="date" value="'+td()+'"></div>'
+    +'</div>'
+    +'<div class="fg" style="margin-bottom:16px"><label>Descripcion</label><input id="dp-desc" value="Deuda expensas anteriores"></div>'
+    +'<button class="btn bg" onclick="sDeudaPrexModal()" style="width:100%">Cargar deuda</button>');
 }
 
 function sDeudaPrexModal(){
   var pid=document.getElementById('dp-prop').value;
   var monto=parseFloat(document.getElementById('dp-monto').value);
-  var fecha=document.getElementById('dp-fecha').value;
-  var desc=document.getElementById('dp-desc').value.trim()||'Deuda preexistente';
-  if(!pid)return toast('Selecciona un propietario');
-  if(!monto||monto<=0)return toast('Ingresa un monto valido');
+  var fecha=document.getElementById('dp-fecha').value||td();
+  var desc=(document.getElementById('dp-desc').value||'').trim()||'Deuda preexistente';
+  if(!pid) return toast('Selecciona un propietario');
+  if(!monto||monto<=0) return toast('Ingresa un monto valido');
   var o={id:uid(),propietario_id:pid,monto:0,fecha:fecha,concepto:'SALDO_ANTERIOR:'+monto,comprobante:desc,pagado_por:'Sistema'};
   dp('ingresos',o).then(function(r){
     if(!r.ok)return r.text().then(function(e){throw new Error(e);});
@@ -635,16 +670,25 @@ function sDeudaPrexModal(){
 }
 
 function editDeudaPrex(id,monto,desc){
-  om('<div class="mt">Editar deuda preexistente <button class="btn bo bs" onclick="cm()">✕</button></div><div class="fr"><div class="fg"><label>Monto ($)</label><input id="edp-monto" type="number" value="'+monto+'"></div><div class="fg"><label>Descripcion</label><input id="edp-desc" value="'+desc+'"></div></div><button class="btn bg" onclick="uDeudaPrex(\''+id+'\')" style="width:100%;margin-top:8px">Guardar cambios</button>');
+  var ing=C.ingresos.find(function(x){return x.id===id;});
+  var fechaVal=ing?(ing.fecha||td()):td();
+  om('<div class="mt">Editar deuda preexistente <button class="btn bo bs" onclick="cm()">✕</button></div>'
+    +'<div class="fr">'
+    +'<div class="fg"><label>Monto ($)</label><input id="edp-monto" type="number" value="'+monto+'"></div>'
+    +'<div class="fg"><label>Fecha de origen</label><input id="edp-fecha" type="date" value="'+fechaVal+'"></div>'
+    +'</div>'
+    +'<div class="fg" style="margin-bottom:16px"><label>Descripcion</label><input id="edp-desc" value="'+desc+'"></div>'
+    +'<button class="btn bg" onclick="uDeudaPrex(\''+id+'\')" style="width:100%;margin-top:8px">Guardar cambios</button>');
 }
 
 function uDeudaPrex(id){
   var monto=parseFloat(document.getElementById('edp-monto').value);
-  var desc=document.getElementById('edp-desc').value.trim();
-  if(!monto||monto<=0)return toast('Monto invalido');
-  dpa('ingresos',id,{concepto:'SALDO_ANTERIOR:'+monto,comprobante:desc}).then(function(){
+  var desc=(document.getElementById('edp-desc').value||'').trim();
+  var fecha=document.getElementById('edp-fecha').value;
+  if(!monto||monto<=0) return toast('Monto invalido');
+  dpa('ingresos',id,{concepto:'SALDO_ANTERIOR:'+monto,comprobante:desc,monto:0,fecha:fecha}).then(function(){
     var i=C.ingresos.find(function(x){return x.id===id;});
-    if(i){i.concepto='SALDO_ANTERIOR:'+monto;i.comprobante=desc;}
+    if(i){i.concepto='SALDO_ANTERIOR:'+monto;i.comprobante=desc;i.fecha=fecha;i.monto=0;}
     cm();nav('deudas');toast('Deuda actualizada');
   }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
 }
@@ -654,7 +698,7 @@ function delDeudaPrex(id){
   dd('ingresos',id).then(function(){
     C.ingresos=C.ingresos.filter(function(i){return i.id!==id;});
     nav('deudas');toast('Deuda eliminada');
-  }).catch(function(){toast('Error');});
+  }).catch(function(){toast('Error al eliminar');});
 }
 
 // ===== CONSORCIOS =====
@@ -704,7 +748,7 @@ function tIngC(cid){
   var ps=C.propietarios.filter(function(p){return p.consorcio_id===cid;});
   var pids=ps.map(function(p){return p.id;});
   var pagos=C.ingresos.filter(function(i){
-    var con=i.concepto||'';
+    var con=(i.concepto||'').trim();
     return pids.indexOf(i.propietario_id)>=0&&Number(i.monto)>0&&i.pagado_por!=='Sistema'&&con.indexOf('SALDO_ANTERIOR:')<0&&con.indexOf('CUOTA_EMITIDA:')<0;
   }).sort(function(a,b){return b.fecha>a.fecha?1:-1;});
   if(!pagos.length)return '<div class="empty">Sin ingresos registrados</div>';
@@ -724,7 +768,16 @@ function tIngC(cid){
   }).join('');
 }
 
-function tU(cid){var ps=sp2(C.propietarios.filter(function(p){return p.consorcio_id===cid;}));var rows=ps.map(function(p){var d=calcDeudaProp(p.id);var ult=C.ingresos.filter(function(i){return i.propietario_id===p.id&&Number(i.monto)>0&&i.pagado_por!=='Sistema';}).sort(function(a,b){return b.fecha>a.fecha?1:-1;})[0];return '<tr><td class="p">'+(p.piso_dpto||p.unidad||'-')+'</td><td><div style="display:flex;align-items:center;gap:8px"><div class="av">'+p.nombre.slice(0,2).toUpperCase()+'</div><div><div style="font-size:13px;font-weight:600;color:var(--text)">'+p.nombre+'</div></div></div></td><td>'+(p.alquilado?'<span class="pill po">Alquilado</span>':'<span class="pill pg">Propio</span>')+'</td><td>'+(p.telefono||'-')+'</td><td style="color:var(--gold)">'+$m(Number(p.cuota_fija||0))+'</td><td style="color:'+(d.total>0?'var(--red)':'var(--green)')+';font-weight:700">'+(d.total>0?$m(d.total):'Al dia ✓')+'</td><td>'+(ult?ult.fecha:'-')+'</td><td><button class="btn bgr bs" onclick="mPago(\''+p.id+'\')">Pago</button> <button class="btn bo bs" onclick="mEP(\''+p.id+'\')">✎</button> <button class="btn bd bs" onclick="dP(\''+p.id+'\',\''+cid+'\')">✕</button></td></tr>';}).join('');return '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn bg" onclick="mAP(\''+cid+'\')">+ Agregar unidad</button></div>'+(ps.length?'<div style="overflow-x:auto"><table><thead><tr><th>Unidad</th><th>Propietario</th><th>Estado</th><th>Tel.</th><th>Cuota</th><th>Deuda</th><th>Ult. pago</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin unidades</div>');}
+function tU(cid){
+  var ps=sp2(C.propietarios.filter(function(p){return p.consorcio_id===cid;}));
+  var rows=ps.map(function(p){
+    var d=calcDeudaProp(p.id);
+    var ult=C.ingresos.filter(function(i){return i.propietario_id===p.id&&Number(i.monto)>0&&i.pagado_por!=='Sistema';}).sort(function(a,b){return b.fecha>a.fecha?1:-1;})[0];
+    return '<tr><td class="p">'+(p.piso_dpto||p.unidad||'-')+'</td><td><div style="display:flex;align-items:center;gap:8px"><div class="av">'+p.nombre.slice(0,2).toUpperCase()+'</div><div><div style="font-size:13px;font-weight:600;color:var(--text)">'+p.nombre+'</div></div></div></td><td>'+(p.alquilado?'<span class="pill po">Alquilado</span>':'<span class="pill pg">Propio</span>')+'</td><td>'+(p.telefono||'-')+'</td><td style="color:var(--gold)">'+$m(Number(p.cuota_fija||0))+'</td><td style="color:'+(d.total>0?'var(--red)':'var(--green)')+';font-weight:700">'+(d.total>0?$m(d.total):'Al dia ✓')+'</td><td>'+(ult?ult.fecha:'-')+'</td><td><button class="btn bgr bs" onclick="mPago(\''+p.id+'\')">Pago</button> <button class="btn bo bs" onclick="mEP(\''+p.id+'\')">✎</button> <button class="btn bd bs" onclick="dP(\''+p.id+'\',\''+cid+'\')">✕</button></td></tr>';
+  }).join('');
+  return '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn bg" onclick="mAP(\''+cid+'\')">+ Agregar unidad</button></div>'+(ps.length?'<div style="overflow-x:auto"><table><thead><tr><th>Unidad</th><th>Propietario</th><th>Estado</th><th>Tel.</th><th>Cuota</th><th>Deuda</th><th>Ult. pago</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin unidades</div>');
+}
+
 function tGC(cid){var gs=C.gastos.filter(function(g){return g.consorcio_id===cid;});var rows=gs.map(function(g){return '<tr><td class="p">'+g.descripcion+'</td><td>'+(g.tipo_gasto==='extraordinario'?'<span class="tag-ext">Ext.</span>':'<span class="tag-ord">Ord.</span>')+'</td><td><span class="tag">'+(g.categoria||'-')+'</span></td><td style="color:var(--gold);font-weight:700">'+$m(g.monto)+'</td><td>'+(g.fecha||'-')+'</td><td>'+(g.proveedor||'-')+'</td><td><button class="btn bd bs" onclick="dGC(\''+g.id+'\',\''+cid+'\')">✕</button></td></tr>';}).join('');return '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn bg" onclick="mAG(\''+cid+'\')">+ Nuevo gasto</button></div>'+(gs.length?'<div style="overflow-x:auto"><table><thead><tr><th>Descripcion</th><th>Tipo</th><th>Categoria</th><th>Monto</th><th>Fecha</th><th>Proveedor</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin gastos</div>');}
 function tMC(cid){var ms=C.mantenimiento.filter(function(m){return m.consorcio_id===cid;});var sc={pendiente:'po',en_curso:'pb',finalizado:'pg',cancelado:'pgr'};var pc={alta:'pr',media:'po',baja:'pgr'};var rows=ms.map(function(m){return '<tr><td class="p">'+m.descripcion+'</td><td>'+(m.tipo||'-')+'</td><td>'+(m.proveedor||'-')+'</td><td>'+(m.fecha_inicio||'-')+'</td><td>'+$m(m.costo||0)+'</td><td><span class="pill '+(pc[m.prioridad]||'pgr')+'">'+(m.prioridad||'-')+'</span></td><td><span class="pill '+(sc[m.estado]||'pgr')+'">'+m.estado.replace('_',' ')+'</span></td><td><button class="btn bo bs" onclick="nEC(\''+m.id+'\',\''+m.estado+'\',\''+cid+'\')">→</button> <button class="btn bd bs" onclick="dMC(\''+m.id+'\',\''+cid+'\')">✕</button></td></tr>';}).join('');return '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn bg" onclick="mAM(\''+cid+'\')">+ Nuevo trabajo</button></div>'+(ms.length?'<div style="overflow-x:auto"><table><thead><tr><th>Descripcion</th><th>Tipo</th><th>Proveedor</th><th>Inicio</th><th>Costo</th><th>Prioridad</th><th>Estado</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin trabajos</div>');}
 function tCC(cid){var cs=C.comunicaciones.filter(function(c){return !c.consorcio_id||c.consorcio_id===cid;});var tc={aviso:'pb',urgente:'pr',reunion:'po',circular:'pgr'};return cs.map(function(c){return '<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="display:flex;align-items:center;gap:8px"><span class="pill '+(tc[c.tipo]||'pgr')+'">'+c.tipo+'</span><span style="font-size:13px;font-weight:600">'+c.titulo+'</span></div><span style="font-size:11px;color:var(--text3)">'+(c.fecha||'-')+'</span></div><div style="font-size:13px;color:var(--text2)">'+c.cuerpo+'</div></div>';}).join('')||'<div class="empty">Sin comunicaciones</div>';}
