@@ -708,9 +708,9 @@ function pgM(){var mor=C.propietarios.filter(function(p){return calcDeudaProp(p.
 function pgL(){
   var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'">'+c.nombre+'</option>';}).join('');
   return '<div class="card" style="margin-bottom:16px"><div class="card-title" style="margin-bottom:16px">Generar liquidacion</div><div class="fr"><div class="fg"><label>Consorcio</label><select id="lc2">'+(opts||'<option>Sin consorcios</option>')+'</select></div><div class="fg"><label>Periodo</label><input type="month" id="lm" value="'+ma()+'"></div></div><button class="btn bg" onclick="genLiq()">Generar</button></div>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:16px">'
-    +'<div class="al ai" style="cursor:pointer;margin-bottom:0" onclick="pgCargaInicialGenova()">🗂 <strong>Carga inicial GENOVA</strong> — Estado al 31/05/2026</div>'
-    +'<div class="al as" style="cursor:pointer;margin-bottom:0" onclick="pgImportarGastosGenova()">📥 <strong>Importar gastos Mayo 2026</strong> — 6 gastos de la liquidacion</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px">'
+    +'<button class="btn bg" onclick="pgCargaInicialGenova()">🗂 Carga inicial GENOVA — Estado al 31/05/2026</button>'
+    +'<button class="btn bgr" onclick="pgImportarGastosGenova()">📥 Importar gastos Mayo 2026</button>'
     +'</div>'
     +'<div id="lr"></div>';
 }
