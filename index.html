@@ -767,14 +767,15 @@ var GENOVA_DATA=[
 ];
 
 function matchProp(ps,nombre){
+  if(!nombre)return null;
   var nl=nombre.toLowerCase().replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u');
   var parts=nl.split(' ').filter(Boolean);
   return ps.find(function(p){
-    if(!p.nombre)return false;
+    if(!p||!p.nombre)return false;
     var pn=p.nombre.toLowerCase().replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u');
     return parts.every(function(pt){return pn.indexOf(pt)>=0;});
   })||ps.find(function(p){
-    if(!p.nombre)return false;
+    if(!p||!p.nombre)return false;
     return p.nombre.toLowerCase().indexOf(parts[0])>=0;
   });
 }
