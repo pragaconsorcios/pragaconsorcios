@@ -443,23 +443,41 @@ function calcDeudaProp(pid){
     }
   });
 
-  // Si NO hay registros CUOTA_EMITIDA, calcular cuotas impagas automáticamente
-  // desde el mes de inicio del consorcio o desde el primer registro hasta hoy
-  if(cuotasEmit===0 && prop && Number(prop.cuota_fija||0)>0){
-    var cuota=Number(prop.cuota_fija);
-    // Obtener mes actual y mes de inicio (primer ingreso o created_at del prop)
+  // Si NO hay registros CUOTA_EMITIDA, usar cuota_fija del propietario
+  // o $60.000 como fallback, y calcular meses impagos hasta hoy
+  if(cuotasEmit===0 && prop){
+    var cuota=Number(prop.cuota_fija||0)||60000;
     var hoy=new Date();
     var mesActual=hoy.toISOString().slice(0,7);
 
-    // Buscar desde qué mes empezar: primer pago registrado o mes actual
-    var primerPago=regs.filter(function(i){return Number(i.monto)>0&&i.pagado_por!=='Sistema'&&i.fecha;})
-      .sort(function(a,b){return a.fecha>b.fecha?1:-1;})[0];
+    // Determinar desde qué mes cobrar:
+    // Si hay pagos registrados, desde el mes siguiente al último pago
+    // Si no hay ningún pago, desde el mes actual solamente
+    var pagosReales=regs.filter(function(i){
+      return Number(i.monto)>0&&i.pagado_por!=='Sistema'&&i.fecha;
+    }).sort(function(a,b){return b.fecha>a.fecha?1:-1;});
 
-    // Usar mes actual como el mes a cobrar (junio en este caso)
-    // Solo sumar cuota del mes actual si no fue pagada
-    var pagadoEsteMes=mesesConPago[mesActual]||0;
-    if(pagadoEsteMes<cuota){
-      cuotasEmit+=cuota-pagadoEsteMes;
+    var ultimoPago=pagosReales[0];
+    var mesDesde;
+    if(ultimoPago){
+      // mes siguiente al último pago
+      var d=new Date(ultimoPago.fecha+'T00:00:00');
+      d.setMonth(d.getMonth()+1);
+      mesDesde=d.toISOString().slice(0,7);
+    } else {
+      mesDesde=mesActual;
+    }
+
+    // Sumar una cuota por cada mes entre mesDesde y mesActual inclusive
+    var cursor=new Date(mesDesde+'-01T00:00:00');
+    var fin=new Date(mesActual+'-01T00:00:00');
+    while(cursor<=fin){
+      var m=cursor.toISOString().slice(0,7);
+      var pagadoEseMes=mesesConPago[m]||0;
+      if(pagadoEseMes<cuota){
+        cuotasEmit+=cuota-pagadoEseMes;
+      }
+      cursor.setMonth(cursor.getMonth()+1);
     }
   }
 
