@@ -417,9 +417,17 @@ function calcDeudaProp(pid){
   var p=C.propietarios.find(function(x){return x.id===pid;});
   if(!p)return {total:0,intereses:0,saldo:0};
   var regs=C.ingresos.filter(function(i){return i.propietario_id===pid;});
-  var deudaAnt=regs.reduce(function(s,i){return s+Number(i.saldo_anterior||0);},0);
-  var cuotasEmit=regs.reduce(function(s,i){return s+Number(i.cuota_emitida||0);},0);
-  var pagados=regs.filter(function(i){return Number(i.monto)>0&&i.pagado_por!=='Sistema';}).reduce(function(s,i){return s+Number(i.monto);},0);
+  var deudaAnt=0,cuotasEmit=0,pagados=0;
+  regs.forEach(function(i){
+    var con=i.concepto||'';
+    if(con.indexOf('SALDO_ANTERIOR:')===0){
+      deudaAnt+=Number(con.replace('SALDO_ANTERIOR:',''))||0;
+    } else if(con.indexOf('CUOTA_EMITIDA:')===0){
+      cuotasEmit+=Number(con.replace('CUOTA_EMITIDA:',''))||0;
+    } else if(Number(i.monto)>0&&i.pagado_por!=='Sistema'){
+      pagados+=Number(i.monto);
+    }
+  });
   var saldo=Math.max(0,deudaAnt+cuotasEmit-pagados);
   var it=CFG.on&&dom()>=CFG.dia&&saldo>0?Math.round(saldo*(CFG.tasa/100)):0;
   return {total:Math.round(saldo+it),intereses:it,saldo:Math.round(saldo)};
@@ -556,7 +564,11 @@ function pgCaja(){
 
 // ===== INGRESOS (pagos recibidos por mes) =====
 function pgI(){
-  var hist=C.ingresos.filter(function(i){return Number(i.monto)>0&&i.pagado_por!=='Sistema';}).sort(function(a,b){return b.fecha>a.fecha?1:-1;});
+  var hist=C.ingresos.filter(function(i){
+    return Number(i.monto)>0&&i.pagado_por!=='Sistema'
+      &&(i.concepto||'').indexOf('SALDO_ANTERIOR:')<0
+      &&(i.concepto||'').indexOf('CUOTA_EMITIDA:')<0;
+  }).sort(function(a,b){return b.fecha>a.fecha?1:-1;});
   var totalGeneral=hist.reduce(function(s,i){return s+Number(i.monto);},0);
   var porMes={};
   hist.forEach(function(i){var mes=i.fecha?i.fecha.slice(0,7):'sin-fecha';if(!porMes[mes])porMes[mes]=[];porMes[mes].push(i);});
