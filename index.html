@@ -674,7 +674,9 @@ function pgCaja(){
 
 function pgL(){
   var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'">'+c.nombre+'</option>';}).join('');
-  return '<div class="card" style="margin-bottom:16px"><div class="card-title" style="margin-bottom:16px">Generar liquidacion</div><div class="fr"><div class="fg"><label>Consorcio</label><select id="lc2">'+(opts||'<option>Sin consorcios</option>')+'</select></div><div class="fg"><label>Periodo</label><input type="month" id="lm" value="'+ma()+'"></div></div><button class="btn bg" onclick="genLiq()">Generar liquidacion</button></div><div id="lr"></div>';
+  return '<div class="card" style="margin-bottom:16px"><div class="card-title" style="margin-bottom:16px">Generar liquidacion</div><div class="fr"><div class="fg"><label>Consorcio</label><select id="lc2">'+(opts||'<option>Sin consorcios</option>')+'</select></div><div class="fg"><label>Periodo</label><input type="month" id="lm" value="'+ma()+'"></div></div><button class="btn bg" onclick="genLiq()">Generar liquidacion</button></div>'
+    +'<div class="al ai" style="cursor:pointer" onclick="pgImportarLiq()">📥 <strong>Importar liquidacion Genova — Mayo 2026</strong> — Carga automatica de gastos y pagos desde la liquidacion oficial. Hacé clic para ver el detalle.</div>'
+    +'<div id="lr"></div>';
 }
 function genLiq(){
   var cid=document.getElementById('lc2').value;
@@ -816,6 +818,106 @@ function showPropPortal(pid){
   var cH=comms.map(function(x){return '<div style="padding:12px 0;border-bottom:1px solid #181820"><div style="font-size:13px;font-weight:600">'+x.titulo+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.6">'+x.cuerpo+'</div></div>';}).join('');
   document.getElementById('ct').innerHTML='<div style="max-width:720px;margin:0 auto"><div class="card"><div style="display:flex;align-items:center;gap:16px;margin-bottom:20px"><div class="av" style="width:52px;height:52px;font-size:18px">'+p.nombre.slice(0,2).toUpperCase()+'</div><div><div style="font-size:17px;font-weight:700">'+p.nombre+'</div><div style="font-size:12px;color:var(--text3);margin-top:3px">'+(c?c.nombre:'-')+' · '+(p.piso_dpto||p.unidad||'-')+'</div></div></div><div class="stat-grid"><div class="m" style="padding:14px"><div class="ml">Saldo</div><div class="mv" style="color:'+(d.saldo>0?'var(--orange)':'var(--green)')+'">'+$m(d.saldo)+'</div></div><div class="m" style="padding:14px"><div class="ml">Interes mora</div><div class="mv" style="color:'+(d.intereses>0?'var(--red)':'var(--text3)')+'">'+$m(d.intereses)+'</div></div><div class="m" style="padding:14px"><div class="ml">Total deuda</div><div class="mv" style="color:'+(d.total>0?'var(--red)':'var(--green)')+'">'+$m(d.total)+'</div></div></div>'+(d.total>0?'<div class="al aw" style="margin-top:16px;margin-bottom:0">Tenes deuda pendiente. Contacta a la administracion.</div>':'<div class="al as" style="margin-top:16px;margin-bottom:0">Estas al dia. ✓</div>')+'</div><div class="card"><div class="card-title" style="margin-bottom:14px">Mis mensajes</div>'+(msgs.length?mH:'<div class="empty">Sin mensajes</div>')+'<hr style="border-color:#1e1e2a;margin:16px 0"><div style="font-size:13px;font-weight:600;margin-bottom:12px">Enviar mensaje a la administracion</div><div class="fg" style="margin-bottom:10px"><label>Asunto</label><input id="msg-asunto" placeholder="Consulta o comentario"></div><div class="fg" style="margin-bottom:12px"><label>Mensaje</label><textarea id="msg-cuerpo" rows="3"></textarea></div><button class="btn bg" onclick="eMsgP(\''+pid+'\')">Enviar</button></div><div class="card"><div class="card-title" style="margin-bottom:14px">Historial de pagos</div>'+(pagos.length?'<table><thead><tr><th>Monto</th><th>Fecha</th><th>Concepto</th><th>Comprobante</th><th>Pago</th></tr></thead><tbody>'+pH+'</tbody></table>':'<div class="empty">Sin pagos</div>')+'</div><div class="card"><div class="card-title" style="margin-bottom:14px">Comunicaciones del consorcio</div>'+(comms.length?cH:'<div class="empty">Sin comunicaciones</div>')+'</div><div style="text-align:center;margin-top:20px"><button class="btn bo" onclick="logout()">Cerrar sesion</button></div></div>';
 }
+// ===== IMPORTAR LIQUIDACION GENOVA MAYO 2026 =====
+function importarLiqGenova(){
+  var cons=C.consorcios.find(function(c){return c.nombre&&c.nombre.toUpperCase().indexOf('GENOVA')>=0;});
+  if(!cons){toast('No se encontro el consorcio GENOVA');return;}
+  var cid=cons.id;
+  var ps=C.propietarios.filter(function(p){return p.consorcio_id===cid;});
+  if(!ps.length){toast('No hay propietarios en GENOVA');return;}
+
+  var gastos=[
+    {desc:'Servicio de Limpieza',monto:84000,cat:'Limpieza'},
+    {desc:'Servicio Mensual de Mantenimiento de Ascensor',monto:70000,cat:'Ascensor'},
+    {desc:'Naturgy San Juan SA - Suministro N 06142004730',monto:133818.15,cat:'Gas'},
+    {desc:'Articulos de Limpieza',monto:31000,cat:'Limpieza'},
+    {desc:'Seguro Edificio',monto:37500,cat:'Seguro'},
+    {desc:'Administracion PRAGA',monto:170000,cat:'Administracion'}
+  ];
+
+  var pagos=[
+    {nombre:'RIZZETTO LYDIA',monto:37500},
+    {nombre:'CAMPOS CARMEN',monto:60000},
+    {nombre:'BOTTO GUIDO',monto:60000},
+    {nombre:'GARCIA CRISTINA',monto:60000},
+    {nombre:'FABRE MARIA INES',monto:60000},
+    {nombre:'RIZZETTO DANIEL',monto:60000},
+    {nombre:'CONDE CECILIA',monto:60000},
+    {nombre:'LUCERO ESTELA',monto:60000},
+    {nombre:'RIZZETTO JORGE',monto:60000},
+    {nombre:'QUIROGA MARIANA',monto:60000},
+    {nombre:'SLAVUTZKY PAULA',monto:60000}
+  ];
+
+  var fecha='2026-05-31';
+  var totalGastos=gastos.reduce(function(s,g){return s+g.monto;},0);
+  var nProps=ps.length;
+  var distPorProp=Math.round((totalGastos/nProps)*100)/100;
+
+  // Construir distribuciones iguales
+  var dist={};
+  ps.forEach(function(p){dist[p.id]=distPorProp;});
+
+  // Cargar gastos
+  var promesasGastos=gastos.map(function(g){
+    var o={id:uid(),descripcion:g.desc,consorcio_id:cid,monto:g.monto,fecha:fecha,tipo_gasto:'ordinario',categoria:g.cat,proveedor:'',distribuciones:dist};
+    return dp('gastos',o).then(function(r){if(r.ok)C.gastos.unshift(o);});
+  });
+
+  // Cargar pagos
+  var promesasPagos=pagos.map(function(pg){
+    var nombre=pg.nombre.toLowerCase();
+    var prop=ps.find(function(p){
+      return p.nombre&&p.nombre.toLowerCase().indexOf(nombre.split(' ')[0])>=0&&
+             p.nombre.toLowerCase().indexOf(nombre.split(' ')[nombre.split(' ').length-1])>=0;
+    });
+    if(!prop){
+      // Buscar solo por primer apellido
+      prop=ps.find(function(p){return p.nombre&&p.nombre.toUpperCase().indexOf(pg.nombre.split(' ')[0])>=0;});
+    }
+    if(!prop){console.warn('No encontrado:',pg.nombre);return Promise.resolve();}
+    var o={id:uid(),propietario_id:prop.id,monto:pg.monto,fecha:fecha,concepto:'Expensa Mayo 2026',comprobante:'',pagado_por:'Propietario'};
+    return dp('ingresos',o).then(function(r){if(r.ok)C.ingresos.unshift(o);});
+  });
+
+  Promise.all(promesasGastos.concat(promesasPagos)).then(function(){
+    cm();
+    nav('ingresos');
+    toast('Liquidacion Mayo 2026 importada correctamente');
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function pgImportarLiq(){
+  var cons=C.consorcios.find(function(c){return c.nombre&&c.nombre.toUpperCase().indexOf('GENOVA')>=0;});
+  var ps=cons?C.propietarios.filter(function(p){return p.consorcio_id===cons.id;}):[];
+  om('<div class="mt">Importar Liquidacion — GENOVA Mayo 2026 <button class="btn bo bs" onclick="cm()">✕</button></div>'
+    +'<div class="al ai" style="margin-bottom:16px">Este proceso cargara automaticamente los gastos y pagos de la liquidacion de Mayo 2026 del consorcio GENOVA.</div>'
+    +'<div class="card" style="margin-bottom:14px;padding:16px"><div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--gold)">Gastos a cargar (ordinarios)</div>'
+    +'<div class="liq-row"><span>Servicio de Limpieza</span><span style="color:var(--blue)">$84.000</span></div>'
+    +'<div class="liq-row"><span>Mantenimiento Ascensor</span><span style="color:var(--blue)">$70.000</span></div>'
+    +'<div class="liq-row"><span>Naturgy - Suministro N° 06142004730</span><span style="color:var(--blue)">$133.818,15</span></div>'
+    +'<div class="liq-row"><span>Articulos de Limpieza</span><span style="color:var(--blue)">$31.000</span></div>'
+    +'<div class="liq-row"><span>Seguro Edificio</span><span style="color:var(--blue)">$37.500</span></div>'
+    +'<div class="liq-row"><span>Administracion PRAGA</span><span style="color:var(--blue)">$170.000</span></div>'
+    +'<div class="liq-tot"><span>Total gastos</span><span style="color:var(--gold)">$526.318,15</span></div></div>'
+    +'<div class="card" style="margin-bottom:20px;padding:16px"><div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--green)">Pagos recibidos (11 propietarios)</div>'
+    +'<div class="liq-row"><span>Rizzetto Lydia</span><span style="color:var(--green)">$37.500</span></div>'
+    +'<div class="liq-row"><span>Campos Carmen</span><span style="color:var(--green)">$60.000</span></div>'
+    +'<div class="liq-row"><span>Botto Guido</span><span style="color:var(--green)">$60.000</span></div>'
+    +'<div class="liq-row"><span>Garcia Cristina</span><span style="color:var(--green)">$60.000</span></div>'
+    +'<div class="liq-row"><span>Fabre Maria Ines</span><span style="color:var(--green)">$60.000</span></div>'
+    +'<div class="liq-row"><span>Rizzetto Daniel</span><span style="color:var(--green)">$60.000</span></div>'
+    +'<div class="liq-row"><span>Conde Cecilia</span><span style="color:var(--green)">$60.000</span></div>'
+    +'<div class="liq-row"><span>Lucero Estela</span><span style="color:var(--green)">$60.000</span></div>'
+    +'<div class="liq-row"><span>Rizzetto Jorge</span><span style="color:var(--green)">$60.000</span></div>'
+    +'<div class="liq-row"><span>Quiroga Mariana</span><span style="color:var(--green)">$60.000</span></div>'
+    +'<div class="liq-row"><span>Slavutzky Paula</span><span style="color:var(--green)">$60.000</span></div>'
+    +'<div class="liq-tot"><span>Total cobrado</span><span style="color:var(--green)">$637.500</span></div></div>'
+    +'<div class="al aw">Propietarios sin pago: Bazan Amalia, Cerdera Elsa, Reinoso Alfredo, Santolaya Lorena</div>'
+    +(ps.length===0?'<div class="al ae">⚠️ No se encontraron propietarios en GENOVA. Verificá que el consorcio esté cargado.</div>':'')
+    +'<button class="btn bg" onclick="importarLiqGenova()" style="width:100%;margin-top:8px;font-size:14px">✓ Confirmar e importar</button>');
+}
+
 function eMsgP(pid){var asunto=document.getElementById('msg-asunto').value.trim();var cuerpo=document.getElementById('msg-cuerpo').value.trim();if(!asunto||!cuerpo)return toast('Completa asunto y mensaje');var o={id:uid(),de:'prop_'+pid,de_nombre:CU.nombre,para_prop_id:null,asunto:asunto,cuerpo:cuerpo,leido:false};dp('mensajes',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});toast('Mensaje enviado a la administracion');document.getElementById('msg-asunto').value='';document.getElementById('msg-cuerpo').value='';}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
 </script>
 </body>
