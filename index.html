@@ -420,8 +420,11 @@ function sp2(ps){
 // Usa parseFloat con trim() para evitar bugs con espacios en concepto
 // ============================================================
 function calcDeudaProp(pid){
+  var prop=C.propietarios.find(function(x){return x.id===pid;});
   var regs=C.ingresos.filter(function(i){return i.propietario_id===pid;});
   var deudaAnt=0,cuotasEmit=0,pagados=0;
+  var mesesConPago={};
+
   regs.forEach(function(i){
     var con=(i.concepto||'').trim();
     if(con.indexOf('SALDO_ANTERIOR:')===0){
@@ -432,8 +435,34 @@ function calcDeudaProp(pid){
       if(!isNaN(val2)&&val2>0) cuotasEmit+=val2;
     } else if(Number(i.monto)>0&&i.pagado_por!=='Sistema'){
       pagados+=Number(i.monto);
+      // registrar en qué meses pagó
+      if(i.fecha){
+        var mes=i.fecha.slice(0,7);
+        mesesConPago[mes]=(mesesConPago[mes]||0)+Number(i.monto);
+      }
     }
   });
+
+  // Si NO hay registros CUOTA_EMITIDA, calcular cuotas impagas automáticamente
+  // desde el mes de inicio del consorcio o desde el primer registro hasta hoy
+  if(cuotasEmit===0 && prop && Number(prop.cuota_fija||0)>0){
+    var cuota=Number(prop.cuota_fija);
+    // Obtener mes actual y mes de inicio (primer ingreso o created_at del prop)
+    var hoy=new Date();
+    var mesActual=hoy.toISOString().slice(0,7);
+
+    // Buscar desde qué mes empezar: primer pago registrado o mes actual
+    var primerPago=regs.filter(function(i){return Number(i.monto)>0&&i.pagado_por!=='Sistema'&&i.fecha;})
+      .sort(function(a,b){return a.fecha>b.fecha?1:-1;})[0];
+
+    // Usar mes actual como el mes a cobrar (junio en este caso)
+    // Solo sumar cuota del mes actual si no fue pagada
+    var pagadoEsteMes=mesesConPago[mesActual]||0;
+    if(pagadoEsteMes<cuota){
+      cuotasEmit+=cuota-pagadoEsteMes;
+    }
+  }
+
   var saldo=Math.max(0,deudaAnt+cuotasEmit-pagados);
   var it=CFG.on&&dom()>=CFG.dia&&saldo>0?Math.round(saldo*(CFG.tasa/100)):0;
   return {total:Math.round(saldo+it),intereses:it,saldo:Math.round(saldo)};
