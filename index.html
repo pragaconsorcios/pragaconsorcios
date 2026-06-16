@@ -512,12 +512,44 @@ function sp2(ps){
   });
 }
 function calcD(pid){
-  var g=0;
-  C.gastos.forEach(function(x){var d=x.distribuciones||{};if(d[pid])g+=Number(d[pid]);});
-  var p=C.ingresos.filter(function(i){return i.propietario_id===pid;}).reduce(function(s,i){return s+Number(i.monto);},0);
-  var s=g-p;if(s<=0)return {total:0,intereses:0,saldo:0};
-  var it=CFG.on&&dom()>=CFG.dia?s*(CFG.tasa/100):0;
-  return {total:Math.round(s+it),intereses:Math.round(it),saldo:Math.round(s)};
+  // La deuda del propietario es: sum de expensas asignadas por mes - sum de pagos realizados
+  // Las expensas se asignan manualmente via ingresos con concepto 'expensa' y monto negativo (cuota)
+  // Modelo correcto: deuda = cuota mensual fija del consorcio - pagos acumulados del propietario
+  var p=C.propietarios.find(function(x){return x.id===pid;});
+  if(!p)return {total:0,intereses:0,saldo:0};
+  
+  // Buscar cuota del consorcio (campo pct usado como cuota fija en $)
+  // Si el propietario tiene cuota_fija la usamos, sino buscamos del consorcio
+  var cons=C.consorcios.find(function(c){return c.id===p.consorcio_id;});
+  var cuotaMes=Number(p.cuota_fija||0);
+  
+  // Calcular meses desde el primer registro de ingreso o desde hace 12 meses
+  var hoy=new Date();
+  var pagos=C.ingresos.filter(function(i){return i.propietario_id===pid;});
+  var totalPagado=pagos.reduce(function(s,i){return s+Number(i.monto);},0);
+  
+  // Deuda = cuotas emitidas - pagos realizados
+  // Las cuotas emitidas se calculan por los meses con expensa en el consorcio
+  // Usamos los registros de "expensas emitidas" que tienen tipo 'cuota'
+  var cuotasEmitidas=C.ingresos.filter(function(i){
+    return i.propietario_id===pid&&i.concepto&&i.concepto.toLowerCase().indexOf('cuota')>=0;
+  }).reduce(function(s,i){return s+Number(i.monto_cuota||i.monto);},0);
+  
+  // Si no hay cuotas emitidas explícitas, usar cuota_fija * meses activos
+  var saldo=0;
+  if(cuotasEmitidas>0){
+    saldo=cuotasEmitidas-totalPagado;
+  } else if(cuotaMes>0){
+    // Contar meses donde hubo liquidacion en el consorcio
+    var mesesLiq=[...new Set(C.gastos.filter(function(g){return g.consorcio_id===p.consorcio_id;}).map(function(g){return g.fecha?g.fecha.slice(0,7):'';}).filter(Boolean))];
+    saldo=cuotaMes*mesesLiq.length-totalPagado;
+  } else {
+    saldo=0;
+  }
+  
+  if(saldo<=0)return {total:0,intereses:0,saldo:0};
+  var it=CFG.on&&dom()>=CFG.dia?saldo*(CFG.tasa/100):0;
+  return {total:Math.round(saldo+it),intereses:Math.round(it),saldo:Math.round(saldo)};
 }
 function calcCaja(cid){
   var pids=C.propietarios.filter(function(p){return p.consorcio_id===cid;}).map(function(p){return p.id;});
@@ -734,8 +766,8 @@ function mEC(id,e){e.stopPropagation();var c=C.consorcios.find(function(x){retur
 function uC(id){var n=document.getElementById('cn').value.trim();if(!n)return toast('Ingresa el nombre');var o={nombre:n,direccion:document.getElementById('cd').value,encargado:document.getElementById('ce').value,unidades:document.getElementById('cu').value,notas:document.getElementById('cno').value};dpa('consorcios',id,o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});var c=C.consorcios.find(function(x){return x.id===id;});if(c)Object.assign(c,o);cm();nav('consorcios');toast('Actualizado');}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
 function dC(id,e){e.stopPropagation();if(!confirm('Eliminar este consorcio?'))return;Promise.all([ddw('propietarios','consorcio_id',id),ddw('gastos','consorcio_id',id),dd('consorcios',id)]).then(function(){C.consorcios=C.consorcios.filter(function(c){return c.id!==id;});C.propietarios=C.propietarios.filter(function(p){return p.consorcio_id!==id;});C.gastos=C.gastos.filter(function(g){return g.consorcio_id!==id;});nav('consorcios');toast('Eliminado');}).catch(function(){toast('Error');});}
 
-function mAP(cid){var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'"'+(cid&&c.id===cid?' selected':'')+'>'+c.nombre+'</option>';}).join('');if(!opts)return toast('Primero crea un consorcio');om('<div class="mt">Nueva Unidad <button class="btn bo bs" onclick="cm()">✕</button></div><div class="fr"><div class="fg"><label>Nombre del propietario</label><input id="pn" placeholder="Juan Garcia"></div><div class="fg"><label>Consorcio</label><select id="pc">'+opts+'</select></div></div><div class="fr"><div class="fg"><label>Piso y departamento</label><input id="ppd" placeholder="1 A"></div><div class="fg"><label>Telefono propietario</label><input id="pt2" placeholder="264..."></div></div><div class="fr"><div class="fg"><label>Email</label><input id="pe"></div><div class="fg"><label>% de expensas</label><input id="pp" type="number" step="0.01" placeholder="8.33"></div></div><div class="fr"><div class="fg"><label>Estado</label><select id="palq"><option value="0">Ocupada por propietario</option><option value="1">Alquilada</option></select></div><div class="fg"><label>Nombre del inquilino</label><input id="pinq"></div></div><div class="fr"><div class="fg"><label>Telefono del inquilino</label><input id="pinqtel" placeholder="264..."></div></div><input type="hidden" id="pb" value="'+(cid||'')+'"><button class="btn bg" onclick="sP()" style="width:100%;margin-top:8px">Guardar</button>');}
-function sP(){var n=document.getElementById('pn').value.trim();if(!n)return toast('Ingresa el nombre');var back=document.getElementById('pb').value;var pd=document.getElementById('ppd').value;var o={id:uid(),nombre:n,consorcio_id:document.getElementById('pc').value,piso_dpto:pd,unidad:pd,telefono:document.getElementById('pt2').value,email:document.getElementById('pe').value,pct:parseFloat(document.getElementById('pp').value)||0,alquilado:document.getElementById('palq').value==='1',inquilino:document.getElementById('pinq').value,inquilino_tel:document.getElementById('pinqtel').value};dp('propietarios',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});C.propietarios.unshift(o);cm();if(back)document.getElementById('ct').innerHTML=rCD(back,'unidades');else nav('consorcios');toast('Unidad agregada');}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
+function mAP(cid){var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'"'+(cid&&c.id===cid?' selected':'')+'>'+c.nombre+'</option>';}).join('');if(!opts)return toast('Primero crea un consorcio');om('<div class="mt">Nueva Unidad <button class="btn bo bs" onclick="cm()">✕</button></div><div class="fr"><div class="fg"><label>Nombre del propietario</label><input id="pn" placeholder="Juan Garcia"></div><div class="fg"><label>Consorcio</label><select id="pc">'+opts+'</select></div></div><div class="fr"><div class="fg"><label>Piso y departamento</label><input id="ppd" placeholder="1 A"></div><div class="fg"><label>Telefono propietario</label><input id="pt2" placeholder="264..."></div></div><div class="fr"><div class="fg"><label>Email</label><input id="pe"></div><div class="fg"><label>Cuota mensual ($)</label><input id="pcuota" type="number" placeholder="60000"></div></div><div class="fr"><div class="fg"><label>Estado</label><select id="palq"><option value="0">Ocupada por propietario</option><option value="1">Alquilada</option></select></div><div class="fg"><label>Nombre del inquilino</label><input id="pinq"></div></div><div class="fr"><div class="fg"><label>Telefono del inquilino</label><input id="pinqtel" placeholder="264..."></div></div><input type="hidden" id="pb" value="'+(cid||'')+'"><button class="btn bg" onclick="sP()" style="width:100%;margin-top:8px">Guardar</button>');}
+function sP(){var n=document.getElementById('pn').value.trim();if(!n)return toast('Ingresa el nombre');var back=document.getElementById('pb').value;var pd=document.getElementById('ppd').value;var o={id:uid(),nombre:n,consorcio_id:document.getElementById('pc').value,piso_dpto:pd,unidad:pd,telefono:document.getElementById('pt2').value,email:document.getElementById('pe').value,cuota_fija:parseFloat(document.getElementById('pcuota').value)||0,alquilado:document.getElementById('palq').value==='1',inquilino:document.getElementById('pinq').value,inquilino_tel:document.getElementById('pinqtel').value};dp('propietarios',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});C.propietarios.unshift(o);cm();if(back)document.getElementById('ct').innerHTML=rCD(back,'unidades');else nav('consorcios');toast('Unidad agregada');}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
 function mEP(pid){var p=C.propietarios.find(function(x){return x.id===pid;});var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'"'+(c.id===p.consorcio_id?' selected':'')+'>'+c.nombre+'</option>';}).join('');om('<div class="mt">Editar Unidad <button class="btn bo bs" onclick="cm()">✕</button></div><div class="fr"><div class="fg"><label>Nombre</label><input id="pn" value="'+p.nombre+'"></div><div class="fg"><label>Consorcio</label><select id="pc">'+opts+'</select></div></div><div class="fr"><div class="fg"><label>Piso y dpto</label><input id="ppd" value="'+(p.piso_dpto||p.unidad||'')+'"></div><div class="fg"><label>Telefono propietario</label><input id="pt2" value="'+(p.telefono||'')+'"></div></div><div class="fr"><div class="fg"><label>Email</label><input id="pe" value="'+(p.email||'')+'"></div><div class="fg"><label>% expensas</label><input id="pp" type="number" step="0.01" value="'+(p.pct||0)+'"></div></div><div class="fr"><div class="fg"><label>Estado</label><select id="palq"><option value="0"'+(!p.alquilado?' selected':'')+'>Ocupada por propietario</option><option value="1"'+(p.alquilado?' selected':'')+'>Alquilada</option></select></div><div class="fg"><label>Nombre inquilino</label><input id="pinq" value="'+(p.inquilino||'')+'"></div></div><div class="fr"><div class="fg"><label>Telefono inquilino</label><input id="pinqtel" value="'+(p.inquilino_tel||'')+'"></div></div><button class="btn bg" onclick="uP(\''+pid+'\')" style="width:100%;margin-top:8px">Guardar cambios</button>');}
 function uP(pid){var pd=document.getElementById('ppd').value;var o={nombre:document.getElementById('pn').value.trim(),consorcio_id:document.getElementById('pc').value,piso_dpto:pd,unidad:pd,telefono:document.getElementById('pt2').value,email:document.getElementById('pe').value,pct:parseFloat(document.getElementById('pp').value)||0,alquilado:document.getElementById('palq').value==='1',inquilino:document.getElementById('pinq').value,inquilino_tel:document.getElementById('pinqtel').value};dpa('propietarios',pid,o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});var p=C.propietarios.find(function(x){return x.id===pid;});if(p)Object.assign(p,o);cm();if(CID)document.getElementById('ct').innerHTML=rCD(CID,'unidades');toast('Actualizado');}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
 function dP(pid,cid){if(!confirm('Eliminar propietario?'))return;dd('propietarios',pid).then(function(){C.propietarios=C.propietarios.filter(function(p){return p.id!==pid;});if(cid)document.getElementById('ct').innerHTML=rCD(cid,'unidades');toast('Eliminado');}).catch(function(){toast('Error');});}
@@ -751,7 +783,73 @@ function mAG(cid){var opts=C.consorcios.map(function(c){return '<option value="'
 function uDist(){var cid=document.getElementById('gc')&&document.getElementById('gc').value;var m=parseFloat(document.getElementById('gm')&&document.getElementById('gm').value)||0;var t=document.getElementById('gdt')&&document.getElementById('gdt').value||'igual';var ps=C.propietarios.filter(function(p){return p.consorcio_id===cid;});var dc=document.getElementById('dc');if(!dc||!ps.length){if(dc)dc.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">Sin propietarios</div>';return;}var h='<table style="font-size:12px"><thead><tr><th>Unidad</th><th>Propietario</th><th>Monto</th></tr></thead><tbody>';ps.forEach(function(p){var v=t==='igual'?m/ps.length:t==='pct'?m*(parseFloat(p.pct)||0)/100:0;h+='<tr><td>'+(p.piso_dpto||p.unidad||'-')+'</td><td>'+p.nombre+'</td><td><input type="number" id="d'+p.id+'" value="'+v.toFixed(2)+'" style="width:100px;background:var(--dark4);border:1px solid #2a2a3a;border-radius:6px;padding:4px 8px;color:var(--text);font-size:12px"></td></tr>';});dc.innerHTML=h+'</tbody></table>';}
 function sG(){var desc=document.getElementById('gd').value.trim();var m=document.getElementById('gm').value;var cid=document.getElementById('gc').value;if(!desc||!m)return toast('Completa descripcion y monto');var ps=C.propietarios.filter(function(p){return p.consorcio_id===cid;});var dist={};ps.forEach(function(p){var v=document.getElementById('d'+p.id);if(v)dist[p.id]=parseFloat(v.value)||0;});var back=document.getElementById('gb')&&document.getElementById('gb').value;var o={id:uid(),descripcion:desc,consorcio_id:cid,monto:parseFloat(m),fecha:document.getElementById('gf').value,tipo_gasto:document.getElementById('gt').value,categoria:document.getElementById('gcat').value,proveedor:document.getElementById('gprov').value,distribuciones:dist};dp('gastos',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});C.gastos.unshift(o);cm();if(back)document.getElementById('ct').innerHTML=rCD(back,'gastos');else nav('gastos');toast('Gasto registrado');}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
 
-function pgI(){var info=!CFG.on?'<div class="al as">Intereses desactivados</div>':dom()<CFG.dia?'<div class="al as">Intereses se activan el dia '+CFG.dia+' (tasa: '+CFG.tasa+'%)</div>':'<div class="al aw">Intereses por mora activos: '+CFG.tasa+'% desde el dia '+CFG.dia+'</div>';var rows=sp2(C.propietarios).map(function(p){var d=calcD(p.id);var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});var u=C.ingresos.filter(function(i){return i.propietario_id===p.id;}).sort(function(a,b){return b.fecha>a.fecha?1:-1;})[0];return '<tr><td class="p">'+p.nombre+'</td><td>'+(p.piso_dpto||p.unidad||'-')+'</td><td>'+(c?c.nombre:'-')+'</td><td style="color:'+(d.saldo>0?'var(--orange)':'var(--green)')+'">'+$m(d.saldo)+'</td><td style="color:'+(d.intereses>0?'var(--red)':'var(--text3)')+'">'+( d.intereses>0?$m(d.intereses):'-')+'</td><td style="color:'+(d.total>0?'var(--red)':'var(--green)')+';font-weight:700">'+$m(d.total)+'</td><td>'+(u?u.fecha:'-')+'</td><td><button class="btn bgr bs" onclick="mPago(\''+p.id+'\')">Pago</button></td></tr>';}).join('');var hist=C.ingresos.slice(0,25).map(function(i){var p=C.propietarios.find(function(x){return x.id===i.propietario_id;});return '<tr><td class="p">'+(p?p.nombre:'-')+'</td><td>'+(p?p.piso_dpto||p.unidad||'-':'-')+'</td><td>'+$m(i.monto)+'</td><td>'+(i.fecha||'-')+'</td><td>'+(i.concepto||'Expensa')+'</td><td>'+(i.comprobante||'-')+'</td><td>'+(i.pagado_por||'Propietario')+'</td><td><button class="btn bo bs" onclick="mEI(\''+i.id+'\')">Editar</button></td></tr>';}).join('');return info+'<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="btn bg" onclick="mPL()">+ Registrar pago</button></div><div class="card"><div class="card-title" style="margin-bottom:14px">Estado de deuda por propietario</div>'+(C.propietarios.length?'<div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Consorcio</th><th>Saldo</th><th>Interes</th><th>Total deuda</th><th>Ultimo pago</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin propietarios</div>')+'</div><div class="card"><div class="card-title" style="margin-bottom:14px">Historial de pagos</div>'+(C.ingresos.length?'<table><thead><tr><th>Propietario</th><th>Unidad</th><th>Monto</th><th>Fecha</th><th>Concepto</th><th>Comprobante</th><th>Pago</th><th></th></tr></thead><tbody>'+hist+'</tbody></table>':'<div class="empty">Sin pagos</div>')+'</div>';}
+function pgI(){
+  var info=!CFG.on?'<div class="al as">Intereses desactivados</div>':dom()<CFG.dia?'<div class="al as">Intereses se activan el dia '+CFG.dia+' (tasa: '+CFG.tasa+'%)</div>':'<div class="al aw">Intereses por mora activos: '+CFG.tasa+'% desde el dia '+CFG.dia+'</div>';
+
+  // Agrupar propietarios por consorcio
+  var consCols=C.consorcios.map(function(cons){
+    var ps=sp2(C.propietarios.filter(function(p){return p.consorcio_id===cons.id;}));
+    if(!ps.length)return '';
+    var rows=ps.map(function(p){
+      var pagos=C.ingresos.filter(function(i){return i.propietario_id===p.id;});
+      var totalPagado=pagos.reduce(function(s,i){return s+Number(i.monto);},0);
+      var cuotaMes=Number(p.cuota_fija||0);
+      var ult=pagos.sort(function(a,b){return b.fecha>a.fecha?1:-1;})[0];
+      // Deuda = cuota fija * meses liquidados - pagado
+      var mesesLiq=[...new Set(C.gastos.filter(function(g){return g.consorcio_id===cons.id&&g.fecha;}).map(function(g){return g.fecha.slice(0,7);}).filter(Boolean))];
+      var totalCuotas=cuotaMes>0?cuotaMes*mesesLiq.length:0;
+      var deuda=Math.max(0,totalCuotas-totalPagado);
+      var it=CFG.on&&dom()>=CFG.dia&&deuda>0?Math.round(deuda*(CFG.tasa/100)):0;
+      var total=deuda+it;
+      return '<tr>'
+        +'<td class="p">'+p.nombre+'</td>'
+        +'<td>'+(p.piso_dpto||p.unidad||'-')+'</td>'
+        +'<td style="color:var(--gold);font-weight:600">'+(cuotaMes>0?$m(cuotaMes):'-')+'</td>'
+        +'<td style="color:var(--green)">'+$m(totalPagado)+'</td>'
+        +'<td style="color:'+(deuda>0?'var(--orange)':'var(--text3)')+'">'+( deuda>0?$m(deuda):'-')+'</td>'
+        +'<td style="color:'+(it>0?'var(--red)':'var(--text3)')+'">'+( it>0?$m(it):'-')+'</td>'
+        +'<td style="color:'+(total>0?'var(--red)':'var(--green)')+';font-weight:700">'+(total>0?$m(total):'Al dia ✓')+'</td>'
+        +'<td>'+(ult?ult.fecha:'-')+'</td>'
+        +'<td><button class="btn bgr bs" onclick="mPago(\''+p.id+'\')">Pago</button></td>'
+        +'</tr>';
+    }).join('');
+    return '<div class="card" style="margin-bottom:16px"><div class="card-head"><div><div class="card-title">'+cons.nombre+'</div><div class="card-sub">'+(cons.direccion||'')+'</div></div></div>'
+      +'<div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Cuota</th><th>Pagado</th><th>Saldo</th><th>Interes</th><th>Total deuda</th><th>Ult. pago</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  }).join('');
+
+  // Historial de pagos
+  var hist=C.ingresos.slice(0,30).map(function(i){
+    var p=C.propietarios.find(function(x){return x.id===i.propietario_id;});
+    var c=p?C.consorcios.find(function(x){return x.id===p.consorcio_id;}):null;
+    return '<tr>'
+      +'<td class="p">'+(p?p.nombre:'-')+'</td>'
+      +'<td>'+(p?p.piso_dpto||p.unidad||'-':'-')+'</td>'
+      +'<td>'+(c?c.nombre:'-')+'</td>'
+      +'<td style="color:var(--green);font-weight:700">'+$m(i.monto)+'</td>'
+      +'<td>'+(i.fecha||'-')+'</td>'
+      +'<td>'+(i.concepto||'Expensa')+'</td>'
+      +'<td>'+(i.comprobante||'-')+'</td>'
+      +'<td>'+(i.pagado_por||'Propietario')+'</td>'
+      +'<td><button class="btn bo bs" onclick="mEI(\''+i.id+'\')">✎</button> <button class="btn bd bs" onclick="dI(\''+i.id+'\')">✕</button></td>'
+      +'</tr>';
+  }).join('');
+
+  return info
+    +'<div style="display:flex;justify-content:flex-end;margin-bottom:20px"><button class="btn bg" onclick="mPL()">+ Registrar pago</button></div>'
+    +consCols
+    +'<div class="card"><div class="card-title" style="margin-bottom:14px">Historial de pagos</div>'
+    +(C.ingresos.length?'<div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Consorcio</th><th>Monto</th><th>Fecha</th><th>Concepto</th><th>Comprobante</th><th>Quien pago</th><th></th></tr></thead><tbody>'+hist+'</tbody></table></div>':'<div class="empty">Sin pagos registrados</div>')
+    +'</div>';
+}
+
+function dI(id){
+  if(!confirm('Eliminar este pago?'))return;
+  dd('ingresos',id).then(function(){
+    C.ingresos=C.ingresos.filter(function(i){return i.id!==id;});
+    nav('ingresos');
+    toast('Pago eliminado');
+  }).catch(function(){toast('Error');});
+}
 function mEI(id){var i=C.ingresos.find(function(x){return x.id===id;});om('<div class="mt">Editar Pago <button class="btn bo bs" onclick="cm()">✕</button></div><div class="fr"><div class="fg"><label>Monto ($)</label><input id="im" type="number" value="'+i.monto+'"></div><div class="fg"><label>Fecha</label><input id="if2" type="date" value="'+(i.fecha||'')+'"></div></div><div class="fr"><div class="fg"><label>Concepto</label><input id="ic" value="'+(i.concepto||'')+'"></div><div class="fg"><label>N comprobante</label><input id="ico" value="'+(i.comprobante||'')+'"></div></div><div class="fr"><div class="fg"><label>Quien pago?</label><select id="ipor"><option value="Propietario"'+(i.pagado_por==='Propietario'?' selected':'')+'>Propietario</option><option value="Inquilino"'+(i.pagado_por==='Inquilino'?' selected':'')+'>Inquilino</option><option value="Otro"'+(i.pagado_por==='Otro'?' selected':'')+'>Otro</option></select></div><div class="fg"><label>Nota</label><input id="inota" value=""></div></div><button class="btn bg" onclick="uI(\''+id+'\')" style="width:100%;margin-top:8px">Guardar cambios</button>');}
 function uI(id){var nota=document.getElementById('inota').value;var por=document.getElementById('ipor').value;var o={monto:parseFloat(document.getElementById('im').value),fecha:document.getElementById('if2').value,concepto:document.getElementById('ic').value,comprobante:document.getElementById('ico').value,pagado_por:por+(nota?' - '+nota:'')};dpa('ingresos',id,o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});var i=C.ingresos.find(function(x){return x.id===id;});if(i)Object.assign(i,o);cm();nav('ingresos');toast('Pago actualizado');}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
 function mPago(pid){var p=C.propietarios.find(function(x){return x.id===pid;});var d=calcD(pid);om('<div class="mt">Registrar pago — '+p.nombre+' <button class="btn bo bs" onclick="cm()">✕</button></div>'+(d.total>0?'<div class="al aw">Deuda: '+$m(d.total)+(d.intereses>0?' (inc. '+$m(d.intereses)+' interes)':'')+'</div>':'')+'<div class="fr"><div class="fg"><label>Monto ($)</label><input id="im" type="number" value="'+(d.total>0?d.total:'')+'"></div><div class="fg"><label>Fecha</label><input id="if2" type="date" value="'+td()+'"></div></div><div class="fr"><div class="fg"><label>Concepto</label><input id="ic" value="Expensa mensual"></div><div class="fg"><label>N comprobante</label><input id="ico" placeholder="Opcional"></div></div><div class="fr"><div class="fg"><label>Quien pago?</label><select id="ipor"><option value="Propietario">Propietario</option><option value="Inquilino">Inquilino</option><option value="Otro">Otro</option></select></div><div class="fg"><label>Nota</label><input id="inota" placeholder="Opcional"></div></div><input type="hidden" id="ip" value="'+pid+'"><button class="btn bg" onclick="sPago()" style="width:100%;margin-top:8px">Confirmar pago</button>');}
