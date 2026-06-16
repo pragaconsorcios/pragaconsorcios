@@ -747,22 +747,23 @@ function genLiq(){
 }
 
 // ===== CARGA INICIAL GENOVA =====
+// Datos por unidad funcional (nombres exactos de la plataforma)
 var GENOVA_DATA=[
-  {nombre:'RIZZETTO LYDIA',   saldo_ant:22500,  pago_mayo:37500,cuota:60000},
-  {nombre:'CAMPOS CARMEN',    saldo_ant:0,      pago_mayo:60000,cuota:60000},
-  {nombre:'BOTTO GUIDO',      saldo_ant:0,      pago_mayo:60000,cuota:60000},
-  {nombre:'GARCIA CRISTINA',  saldo_ant:0,      pago_mayo:60000,cuota:60000},
-  {nombre:'FABRE MARIA INES', saldo_ant:0,      pago_mayo:60000,cuota:60000},
-  {nombre:'RIZZETTO DANIEL',  saldo_ant:120000, pago_mayo:60000,cuota:60000},
-  {nombre:'CONDE CECILIA',    saldo_ant:0,      pago_mayo:60000,cuota:60000},
-  {nombre:'LUCERO ESTELA',    saldo_ant:0,      pago_mayo:60000,cuota:60000},
-  {nombre:'RIZZETTO JORGE',   saldo_ant:0,      pago_mayo:60000,cuota:60000},
-  {nombre:'QUIROGA MARIANA',  saldo_ant:0,      pago_mayo:60000,cuota:60000},
-  {nombre:'BAZAN AMALIA',     saldo_ant:265544, pago_mayo:0,    cuota:60000},
-  {nombre:'CERDERA ELSA',     saldo_ant:60000,  pago_mayo:0,    cuota:60000},
-  {nombre:'REINOSO ALFREDO',  saldo_ant:60000,  pago_mayo:0,    cuota:60000},
-  {nombre:'SANTOLAYA LORENA', saldo_ant:60000,  pago_mayo:0,    cuota:60000},
-  {nombre:'SLAVUTZKY PAULA',  saldo_ant:0,      pago_mayo:60000,cuota:60000}
+  {unidad:'1° A', saldo_ant:22500,  pago_mayo:37500, cuota:60000},
+  {unidad:'1° B', saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {unidad:'1° C', saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {unidad:'2° A', saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {unidad:'2° B', saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {unidad:'2° C', saldo_ant:120000, pago_mayo:60000, cuota:60000},
+  {unidad:'3° A', saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {unidad:'3° B', saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {unidad:'3° C', saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {unidad:'4° A', saldo_ant:0,      pago_mayo:60000, cuota:60000},
+  {unidad:'4° B', saldo_ant:265544, pago_mayo:0,     cuota:60000},
+  {unidad:'4° C', saldo_ant:60000,  pago_mayo:0,     cuota:60000},
+  {unidad:'5° A', saldo_ant:60000,  pago_mayo:0,     cuota:60000},
+  {unidad:'5° B', saldo_ant:60000,  pago_mayo:0,     cuota:60000},
+  {unidad:'5° C', saldo_ant:0,      pago_mayo:60000, cuota:60000}
 ];
 
 function matchProp(ps,nombre){
@@ -832,7 +833,52 @@ function pgImportarGastosGenova(){
 }
 
 // ===== PAGOS =====
-function mPago(pid){var p=C.propietarios.find(function(x){return x.id===pid;});var d=calcDeudaProp(pid);om('<div class="mt">Registrar pago — '+p.nombre+' <button class="btn bo bs" onclick="cm()">✕</button></div>'+(d.total>0?'<div class="al aw">Deuda actual: '+$m(d.total)+(d.intereses>0?' (inc. '+$m(d.intereses)+' interes)':'')+'</div>':'<div class="al as">Al dia ✓</div>')+'<div class="fr"><div class="fg"><label>Monto ($)</label><input id="im" type="number" value="'+(d.total>0?d.total:'')+'"></div><div class="fg"><label>Fecha</label><input id="if2" type="date" value="'+td()+'"></div></div><div class="fr"><div class="fg"><label>Concepto</label><input id="ic" value="Expensa mensual"></div><div class="fg"><label>N comprobante</label><input id="ico" placeholder="Opcional"></div></div><div class="fr"><div class="fg"><label>Quien pago?</label><select id="ipor"><option value="Propietario">Propietario</option><option value="Inquilino">Inquilino</option><option value="Otro">Otro</option></select></div><div class="fg"><label>Nota</label><input id="inota" placeholder="Opcional"></div></div><input type="hidden" id="ip" value="'+pid+'"><button class="btn bg" onclick="sPago()" style="width:100%;margin-top:8px">Confirmar pago</button>');}
+function mPago(pid){
+  var p=C.propietarios.find(function(x){return x.id===pid;});
+  var d=calcDeudaProp(pid);
+  om('<div class="mt">Registrar pago — '+p.nombre+' <button class="btn bo bs" onclick="cm()">✕</button></div>'
+    +(d.total>0?'<div class="al aw">Deuda actual: '+$m(d.total)+(d.intereses>0?' (inc. '+$m(d.intereses)+' interes)':'')+'</div>':'<div class="al as">Al dia ✓</div>')
+    +'<div class="tb" style="margin-bottom:20px">'
+    +'<div class="tab active" id="tab-pago" onclick="switchTabPago(\'pago\')">Registrar pago</div>'
+    +'<div class="tab" id="tab-deuda" onclick="switchTabPago(\'deuda\')">Cargar deuda preexistente</div>'
+    +'</div>'
+    +'<div id="panel-pago">'
+    +'<div class="fr"><div class="fg"><label>Monto ($)</label><input id="im" type="number" value="'+(d.total>0?d.total:'')+'"></div><div class="fg"><label>Fecha</label><input id="if2" type="date" value="'+td()+'"></div></div>'
+    +'<div class="fr"><div class="fg"><label>Concepto</label><input id="ic" value="Expensa mensual"></div><div class="fg"><label>N comprobante</label><input id="ico" placeholder="Opcional"></div></div>'
+    +'<div class="fr"><div class="fg"><label>Quien pago?</label><select id="ipor"><option value="Propietario">Propietario</option><option value="Inquilino">Inquilino</option><option value="Otro">Otro</option></select></div><div class="fg"><label>Nota</label><input id="inota" placeholder="Opcional"></div></div>'
+    +'<input type="hidden" id="ip" value="'+pid+'">'
+    +'<button class="btn bg" onclick="sPago()" style="width:100%;margin-top:8px">Confirmar pago</button>'
+    +'</div>'
+    +'<div id="panel-deuda" style="display:none">'
+    +'<div class="al ai" style="margin-bottom:16px">Usá esta opcion para registrar deudas que existian antes de usar la plataforma. No requieren un gasto imputado.</div>'
+    +'<div class="fr"><div class="fg"><label>Monto de deuda ($)</label><input id="deuda-monto" type="number" placeholder="60000"></div><div class="fg"><label>Fecha de origen</label><input id="deuda-fecha" type="date" value="'+td()+'"></div></div>'
+    +'<div class="fg" style="margin-bottom:16px"><label>Descripcion</label><input id="deuda-desc" placeholder="Ej: Deuda expensas anteriores"></div>'
+    +'<button class="btn bg" onclick="sDeudaPrex(\''+pid+'\')" style="width:100%">Cargar deuda preexistente</button>'
+    +'</div>'
+  );
+}
+
+function switchTabPago(t){
+  document.getElementById('tab-pago').classList.toggle('active',t==='pago');
+  document.getElementById('tab-deuda').classList.toggle('active',t==='deuda');
+  document.getElementById('panel-pago').style.display=t==='pago'?'block':'none';
+  document.getElementById('panel-deuda').style.display=t==='deuda'?'block':'none';
+}
+
+function sDeudaPrex(pid){
+  var monto=parseFloat(document.getElementById('deuda-monto').value);
+  var fecha=document.getElementById('deuda-fecha').value;
+  var desc=document.getElementById('deuda-desc').value.trim()||'Deuda preexistente';
+  if(!monto||monto<=0)return toast('Ingresa un monto valido');
+  var o={id:uid(),propietario_id:pid,monto:0,fecha:fecha,concepto:'SALDO_ANTERIOR:'+monto,comprobante:desc,pagado_por:'Sistema'};
+  dp('ingresos',o).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    C.ingresos.push(o);
+    cm();
+    nav('deudas');
+    toast('Deuda preexistente cargada: '+$m(monto));
+  }).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
 function mPL(){var opts=C.propietarios.map(function(p){var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});return '<option value="'+p.id+'">'+p.nombre+' — '+(p.piso_dpto||p.unidad||'-')+(c?' ('+c.nombre+')':'')+'</option>';}).join('');if(!opts)return toast('Sin propietarios');om('<div class="mt">Registrar pago <button class="btn bo bs" onclick="cm()">✕</button></div><div class="fg" style="margin-bottom:12px"><label>Propietario</label><select id="ip">'+opts+'</select></div><div class="fr"><div class="fg"><label>Monto ($)</label><input id="im" type="number"></div><div class="fg"><label>Fecha</label><input id="if2" type="date" value="'+td()+'"></div></div><div class="fr"><div class="fg"><label>Concepto</label><input id="ic" value="Expensa mensual"></div><div class="fg"><label>N comprobante</label><input id="ico"></div></div><div class="fr"><div class="fg"><label>Quien pago?</label><select id="ipor"><option value="Propietario">Propietario</option><option value="Inquilino">Inquilino</option><option value="Otro">Otro</option></select></div><div class="fg"><label>Nota</label><input id="inota" placeholder="Opcional"></div></div><button class="btn bg" onclick="sPago()" style="width:100%;margin-top:8px">Confirmar pago</button>');}
 function sPago(){var m=document.getElementById('im').value;var pid=document.getElementById('ip').value;if(!m)return toast('Ingresa el monto');var nota=document.getElementById('inota').value;var por=document.getElementById('ipor').value;var o={id:uid(),propietario_id:pid,monto:parseFloat(m),fecha:document.getElementById('if2').value,concepto:document.getElementById('ic').value,comprobante:document.getElementById('ico').value,pagado_por:por+(nota?' — '+nota:'')};dp('ingresos',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});C.ingresos.unshift(o);cm();nav('deudas');toast('Pago registrado');}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
 function mEI(id){var i=C.ingresos.find(function(x){return x.id===id;});om('<div class="mt">Editar Pago <button class="btn bo bs" onclick="cm()">✕</button></div><div class="fr"><div class="fg"><label>Monto ($)</label><input id="im" type="number" value="'+i.monto+'"></div><div class="fg"><label>Fecha</label><input id="if2" type="date" value="'+(i.fecha||'')+'"></div></div><div class="fr"><div class="fg"><label>Concepto</label><input id="ic" value="'+(i.concepto||'')+'"></div><div class="fg"><label>N comprobante</label><input id="ico" value="'+(i.comprobante||'')+'"></div></div><div class="fr"><div class="fg"><label>Quien pago?</label><select id="ipor"><option value="Propietario"'+(i.pagado_por==='Propietario'?' selected':'')+'>Propietario</option><option value="Inquilino"'+(i.pagado_por==='Inquilino'?' selected':'')+'>Inquilino</option><option value="Otro"'+(i.pagado_por==='Otro'?' selected':'')+'>Otro</option></select></div></div><button class="btn bg" onclick="uI(\''+id+'\')" style="width:100%;margin-top:8px">Guardar</button>');}
