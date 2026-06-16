@@ -435,7 +435,6 @@ function calcDeudaProp(pid){
       if(!isNaN(val2)&&val2>0) cuotasEmit+=val2;
     } else if(Number(i.monto)>0&&i.pagado_por!=='Sistema'){
       pagados+=Number(i.monto);
-      // registrar en qué meses pagó
       if(i.fecha){
         var mes=i.fecha.slice(0,7);
         mesesConPago[mes]=(mesesConPago[mes]||0)+Number(i.monto);
@@ -443,41 +442,39 @@ function calcDeudaProp(pid){
     }
   });
 
-  // Si NO hay registros CUOTA_EMITIDA, usar cuota_fija del propietario
-  // o $60.000 como fallback, y calcular meses impagos hasta hoy
+  // Calcular cuotas impagas automáticamente si no hay CUOTA_EMITIDA
   if(cuotasEmit===0 && prop){
-    var cuota=Number(prop.cuota_fija||0)||60000;
+    var cuota=Number(prop.cuota_fija)||60000;
     var hoy=new Date();
-    var mesActual=hoy.toISOString().slice(0,7);
+    var mesActual=hoy.getFullYear()+'-'+(String(hoy.getMonth()+1).padStart(2,'0'));
 
-    // Determinar desde qué mes cobrar:
-    // Si hay pagos registrados, desde el mes siguiente al último pago
-    // Si no hay ningún pago, desde el mes actual solamente
+    // Desde el mes siguiente al último pago, o el mes actual si nunca pagó
     var pagosReales=regs.filter(function(i){
       return Number(i.monto)>0&&i.pagado_por!=='Sistema'&&i.fecha;
-    }).sort(function(a,b){return b.fecha>a.fecha?1:-1;});
+    }).sort(function(a,b){return a.fecha>b.fecha?1:-1;});
 
-    var ultimoPago=pagosReales[0];
     var mesDesde;
-    if(ultimoPago){
-      // mes siguiente al último pago
-      var d=new Date(ultimoPago.fecha+'T00:00:00');
-      d.setMonth(d.getMonth()+1);
-      mesDesde=d.toISOString().slice(0,7);
+    if(pagosReales.length>0){
+      var ultimoPago=pagosReales[pagosReales.length-1];
+      var dp=ultimoPago.fecha.split('-');
+      var anio=parseInt(dp[0]),mes2=parseInt(dp[1]);
+      mes2++;if(mes2>12){mes2=1;anio++;}
+      mesDesde=anio+'-'+String(mes2).padStart(2,'0');
     } else {
       mesDesde=mesActual;
     }
 
-    // Sumar una cuota por cada mes entre mesDesde y mesActual inclusive
-    var cursor=new Date(mesDesde+'-01T00:00:00');
-    var fin=new Date(mesActual+'-01T00:00:00');
-    while(cursor<=fin){
-      var m=cursor.toISOString().slice(0,7);
-      var pagadoEseMes=mesesConPago[m]||0;
-      if(pagadoEseMes<cuota){
-        cuotasEmit+=cuota-pagadoEseMes;
-      }
-      cursor.setMonth(cursor.getMonth()+1);
+    // Acumular cuota por cada mes sin pago hasta el mes actual
+    var partsD=mesDesde.split('-');
+    var partsH=mesActual.split('-');
+    var aD=parseInt(partsD[0]),mD=parseInt(partsD[1]);
+    var aH=parseInt(partsH[0]),mH=parseInt(partsH[1]);
+
+    while(aD<aH||(aD===aH&&mD<=mH)){
+      var clave=aD+'-'+String(mD).padStart(2,'0');
+      var pagadoEseMes=mesesConPago[clave]||0;
+      if(pagadoEseMes<cuota) cuotasEmit+=(cuota-pagadoEseMes);
+      mD++;if(mD>12){mD=1;aD++;}
     }
   }
 
