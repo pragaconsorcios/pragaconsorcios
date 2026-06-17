@@ -469,7 +469,11 @@ function calcDeudaProp(pid){
       mC++;if(mC>12){mC=1;aC++;}
     }
 
-    saldo=Math.max(0,deudaAnt+deudaCuotas);
+var pagosDisponibles=pagados;
+    var saldoAntRestante=Math.max(0,deudaAnt-pagosDisponibles);
+    pagosDisponibles=Math.max(0,pagosDisponibles-deudaAnt);
+    var cuotasRestantes=Math.max(0,deudaCuotas-pagosDisponibles);
+    saldo=saldoAntRestante+cuotasRestantes;
   }
   var it=CFG.on&&dom()>=CFG.dia&&saldo>0?Math.round(saldo*(CFG.tasa/100)):0;
   return {total:Math.round(saldo+it),intereses:it,saldo:Math.round(saldo)};
