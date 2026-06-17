@@ -436,11 +436,8 @@ function calcDeudaProp(pid){
     var cuota=Number(prop.cuota_fija)||60000;
     var hoy2=new Date();
     var anioH=hoy2.getFullYear(),mesH=hoy2.getMonth()+1;
-    var mesActual2=anioH+'-'+String(mesH).padStart(2,'0');
 
-    // Mes desde el que se empieza a cobrar:
-    // Si hay pagos, desde el mes siguiente al último pago registrado
-    // Si no hay pagos, desde el mes actual
+    // Sumar cuotas impagas mes a mes
     var pagosReales=regs.filter(function(i){
       return Number(i.monto)>0&&i.pagado_por!=='Sistema'&&i.fecha;
     }).sort(function(a,b){return a.fecha>b.fecha?1:-1;});
@@ -454,13 +451,10 @@ function calcDeudaProp(pid){
       aD2=anioH;mD2=mesH;
     }
 
-    // Sumar una cuota por cada mes sin pago desde mesDesde hasta hoy
-    // Solo contar el mes actual si ya pasó el día de vencimiento (CFG.dia)
     var deudaCuotas=0;
     var aC=aD2,mC=mD2;
     while(aC<anioH||(aC===anioH&&mC<=mesH)){
       var esMesActual=(aC===anioH&&mC===mesH);
-      // Solo cobrar el mes actual si ya venció (pasó el día CFG.dia)
       if(!esMesActual||hoy2.getDate()>=CFG.dia){
         var claveM=aC+'-'+String(mC).padStart(2,'0');
         var pagadoM=mesesConPago[claveM]||0;
@@ -469,7 +463,12 @@ function calcDeudaProp(pid){
       mC++;if(mC>12){mC=1;aC++;}
     }
 
-    saldo=Math.max(0,deudaAnt+deudaCuotas);
+    // Descontar pagos del saldo anterior primero, luego de cuotas
+    var pagosDisponibles=pagados;
+    var saldoAntRestante=Math.max(0,deudaAnt-pagosDisponibles);
+    pagosDisponibles=Math.max(0,pagosDisponibles-deudaAnt);
+    var cuotasRestantes=Math.max(0,deudaCuotas-pagosDisponibles);
+    saldo=saldoAntRestante+cuotasRestantes;
   }
   var it=CFG.on&&dom()>=CFG.dia&&saldo>0?Math.round(saldo*(CFG.tasa/100)):0;
   return {total:Math.round(saldo+it),intereses:it,saldo:Math.round(saldo)};
