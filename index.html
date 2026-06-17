@@ -408,6 +408,7 @@ function calcDeudaProp(pid){
   var regs=C.ingresos.filter(function(i){return i.propietario_id===pid;});
   var deudaAnt=0,cuotasEmit=0,pagados=0;
   var mesesConPago={};
+  var mesesEmitidos={};
 
   regs.forEach(function(i){
     var con=(i.concepto||'').trim();
@@ -417,6 +418,7 @@ function calcDeudaProp(pid){
     } else if(con.indexOf('CUOTA_EMITIDA:')===0){
       var val2=parseFloat(con.replace('CUOTA_EMITIDA:','').trim());
       if(!isNaN(val2)&&val2>0) cuotasEmit+=val2;
+      if(i.fecha) mesesEmitidos[i.fecha.slice(0,7)]=true;
     } else if(Number(i.monto)>0&&i.pagado_por!=='Sistema'){
       pagados+=Number(i.monto);
       if(i.fecha){
@@ -426,44 +428,59 @@ function calcDeudaProp(pid){
     }
   });
 
-  // Calcular cuotas impagas automáticamente si no hay CUOTA_EMITIDA
-  // En este modo los pagos se asignan mes a mes, no se acumulan globalmente
   var saldo=0;
   if(cuotasEmit>0){
-    // Modo clásico: hay registros CUOTA_EMITIDA
-    saldo=Math.max(0,deudaAnt+cuotasEmit-pagados);
+    // Modo clásico + acumulación automática de los meses NO emitidos
+    // (desde el mes siguiente al último emitido, hasta el mes actual)
+    var cuotaFija=prop?(Number(prop.cuota_fija)||0):0;
+    var cuotasAuto=0;
+    var clavesEmit=Object.keys(mesesEmitidos).sort();
+    if(clavesEmit.length>0&&cuotaFija>0){
+      var ult=clavesEmit[clavesEmit.length-1].split('-');
+      var hoy2=new Date();
+      var anioH=hoy2.getFullYear(),mesH=hoy2.getMonth()+1;
+      var aC=parseInt(ult[0]),mC=parseInt(ult[1])+1;
+      if(mC>12){mC=1;aC++;}
+      while(aC<anioH||(aC===anioH&&mC<=mesH)){
+        var esMesActual=(aC===anioH&&mC===mesH);
+        // El mes en curso recien cuenta como deuda a partir del dia de vencimiento
+        if(!esMesActual||hoy2.getDate()>=CFG.dia){
+          cuotasAuto+=cuotaFija;
+        }
+        mC++;if(mC>12){mC=1;aC++;}
+      }
+    }
+    saldo=Math.max(0,deudaAnt+cuotasEmit+cuotasAuto-pagados);
   } else if(prop){
     var cuota=Number(prop.cuota_fija)||60000;
-    var hoy2=new Date();
-    var anioH=hoy2.getFullYear(),mesH=hoy2.getMonth()+1;
+    var hoy2b=new Date();
+    var anioHb=hoy2b.getFullYear(),mesHb=hoy2b.getMonth()+1;
 
-    // Sumar cuotas impagas mes a mes
     var pagosReales=regs.filter(function(i){
       return Number(i.monto)>0&&i.pagado_por!=='Sistema'&&i.fecha;
     }).sort(function(a,b){return a.fecha>b.fecha?1:-1;});
 
     var aD2,mD2;
     if(pagosReales.length>0){
-      var ult=pagosReales[pagosReales.length-1].fecha.split('-');
-      aD2=parseInt(ult[0]);mD2=parseInt(ult[1])+1;
+      var ultp=pagosReales[pagosReales.length-1].fecha.split('-');
+      aD2=parseInt(ultp[0]);mD2=parseInt(ultp[1])+1;
       if(mD2>12){mD2=1;aD2++;}
     } else {
-      aD2=anioH;mD2=mesH;
+      aD2=anioHb;mD2=mesHb;
     }
 
     var deudaCuotas=0;
-    var aC=aD2,mC=mD2;
-    while(aC<anioH||(aC===anioH&&mC<=mesH)){
-      var esMesActual=(aC===anioH&&mC===mesH);
-      if(!esMesActual||hoy2.getDate()>=CFG.dia){
-        var claveM=aC+'-'+String(mC).padStart(2,'0');
+    var aCb=aD2,mCb=mD2;
+    while(aCb<anioHb||(aCb===anioHb&&mCb<=mesHb)){
+      var esMesActualb=(aCb===anioHb&&mCb===mesHb);
+      if(!esMesActualb||hoy2b.getDate()>=CFG.dia){
+        var claveM=aCb+'-'+String(mCb).padStart(2,'0');
         var pagadoM=mesesConPago[claveM]||0;
         if(pagadoM<cuota) deudaCuotas+=(cuota-pagadoM);
       }
-      mC++;if(mC>12){mC=1;aC++;}
+      mCb++;if(mCb>12){mCb=1;aCb++;}
     }
 
-    // Descontar pagos del saldo anterior primero, luego de cuotas
     var pagosDisponibles=pagados;
     var saldoAntRestante=Math.max(0,deudaAnt-pagosDisponibles);
     pagosDisponibles=Math.max(0,pagosDisponibles-deudaAnt);
