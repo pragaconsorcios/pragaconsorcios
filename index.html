@@ -408,7 +408,6 @@ function calcDeudaProp(pid){
   var regs=C.ingresos.filter(function(i){return i.propietario_id===pid;});
   var deudaAnt=0,cuotasEmit=0,pagados=0;
   var mesesConPago={};
-  var mesesEmitidos={};
 
   regs.forEach(function(i){
     var con=(i.concepto||'').trim();
@@ -418,7 +417,6 @@ function calcDeudaProp(pid){
     } else if(con.indexOf('CUOTA_EMITIDA:')===0){
       var val2=parseFloat(con.replace('CUOTA_EMITIDA:','').trim());
       if(!isNaN(val2)&&val2>0) cuotasEmit+=val2;
-      if(i.fecha) mesesEmitidos[i.fecha.slice(0,7)]=true;
     } else if(Number(i.monto)>0&&i.pagado_por!=='Sistema'){
       pagados+=Number(i.monto);
       if(i.fecha){
@@ -428,64 +426,50 @@ function calcDeudaProp(pid){
     }
   });
 
+  // Calcular cuotas impagas automáticamente si no hay CUOTA_EMITIDA
+  // En este modo los pagos se asignan mes a mes, no se acumulan globalmente
   var saldo=0;
   if(cuotasEmit>0){
-    // Modo clásico + acumulación automática de los meses NO emitidos
-    // (desde el mes siguiente al último emitido, hasta el mes actual)
-    var cuotaFija=prop?(Number(prop.cuota_fija)||0):0;
-    var cuotasAuto=0;
-    var clavesEmit=Object.keys(mesesEmitidos).sort();
-    if(clavesEmit.length>0&&cuotaFija>0){
-      var ult=clavesEmit[clavesEmit.length-1].split('-');
-      var hoy2=new Date();
-      var anioH=hoy2.getFullYear(),mesH=hoy2.getMonth()+1;
-      var aC=parseInt(ult[0]),mC=parseInt(ult[1])+1;
-      if(mC>12){mC=1;aC++;}
-      while(aC<anioH||(aC===anioH&&mC<=mesH)){
-        var esMesActual=(aC===anioH&&mC===mesH);
-        // El mes en curso recien cuenta como deuda a partir del dia de vencimiento
-        if(!esMesActual||hoy2.getDate()>=CFG.dia){
-          cuotasAuto+=cuotaFija;
-        }
-        mC++;if(mC>12){mC=1;aC++;}
-      }
-    }
-    saldo=Math.max(0,deudaAnt+cuotasEmit+cuotasAuto-pagados);
+    // Modo clásico: hay registros CUOTA_EMITIDA
+    saldo=Math.max(0,deudaAnt+cuotasEmit-pagados);
   } else if(prop){
     var cuota=Number(prop.cuota_fija)||60000;
-    var hoy2b=new Date();
-    var anioHb=hoy2b.getFullYear(),mesHb=hoy2b.getMonth()+1;
+    var hoy2=new Date();
+    var anioH=hoy2.getFullYear(),mesH=hoy2.getMonth()+1;
+    var mesActual2=anioH+'-'+String(mesH).padStart(2,'0');
 
+    // Mes desde el que se empieza a cobrar:
+    // Si hay pagos, desde el mes siguiente al último pago registrado
+    // Si no hay pagos, desde el mes actual
     var pagosReales=regs.filter(function(i){
       return Number(i.monto)>0&&i.pagado_por!=='Sistema'&&i.fecha;
     }).sort(function(a,b){return a.fecha>b.fecha?1:-1;});
 
     var aD2,mD2;
     if(pagosReales.length>0){
-      var ultp=pagosReales[pagosReales.length-1].fecha.split('-');
-      aD2=parseInt(ultp[0]);mD2=parseInt(ultp[1])+1;
+      var ult=pagosReales[pagosReales.length-1].fecha.split('-');
+      aD2=parseInt(ult[0]);mD2=parseInt(ult[1])+1;
       if(mD2>12){mD2=1;aD2++;}
     } else {
-      aD2=anioHb;mD2=mesHb;
+      aD2=anioH;mD2=mesH;
     }
 
+    // Sumar una cuota por cada mes sin pago desde mesDesde hasta hoy
+    // Solo contar el mes actual si ya pasó el día de vencimiento (CFG.dia)
     var deudaCuotas=0;
-    var aCb=aD2,mCb=mD2;
-    while(aCb<anioHb||(aCb===anioHb&&mCb<=mesHb)){
-      var esMesActualb=(aCb===anioHb&&mCb===mesHb);
-      if(!esMesActualb||hoy2b.getDate()>=CFG.dia){
-        var claveM=aCb+'-'+String(mCb).padStart(2,'0');
+    var aC=aD2,mC=mD2;
+    while(aC<anioH||(aC===anioH&&mC<=mesH)){
+      var esMesActual=(aC===anioH&&mC===mesH);
+      // Solo cobrar el mes actual si ya venció (pasó el día CFG.dia)
+      if(!esMesActual||hoy2.getDate()>=CFG.dia){
+        var claveM=aC+'-'+String(mC).padStart(2,'0');
         var pagadoM=mesesConPago[claveM]||0;
         if(pagadoM<cuota) deudaCuotas+=(cuota-pagadoM);
       }
-      mCb++;if(mCb>12){mCb=1;aCb++;}
+      mC++;if(mC>12){mC=1;aC++;}
     }
 
-    var pagosDisponibles=pagados;
-    var saldoAntRestante=Math.max(0,deudaAnt-pagosDisponibles);
-    pagosDisponibles=Math.max(0,pagosDisponibles-deudaAnt);
-    var cuotasRestantes=Math.max(0,deudaCuotas-pagosDisponibles);
-    saldo=saldoAntRestante+cuotasRestantes;
+    saldo=Math.max(0,deudaAnt+deudaCuotas);
   }
   var it=CFG.on&&dom()>=CFG.dia&&saldo>0?Math.round(saldo*(CFG.tasa/100)):0;
   return {total:Math.round(saldo+it),intereses:it,saldo:Math.round(saldo)};
@@ -686,7 +670,7 @@ function pgDeudas(){
   }).join('');
   return info
     +'<div class="stat-grid" style="margin-bottom:20px"><div class="stat-card"><div><div class="stat-label">Deuda total</div><div class="stat-value" style="color:var(--red)">'+$m(totalDeuda)+'</div></div><div class="stat-icon" style="background:var(--red-dim)">📉</div></div><div class="stat-card"><div><div class="stat-label">Con deuda</div><div class="stat-value" style="color:var(--orange)">'+totalMorosos+'</div></div><div class="stat-icon" style="background:var(--orange-dim)">⚠️</div></div></div>'
-    +'<div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:20px;flex-wrap:wrap"><button class="btn bo" onclick="mDeudaPrex()">+ Cargar deuda preexistente</button><button class="btn bgr" onclick="mEmitirCuotas()">+ Emitir cuotas del mes</button><button class="btn bg" onclick="mPL()">+ Registrar pago</button></div>'
+    +'<div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:20px"><button class="btn bo" onclick="mDeudaPrex()">+ Cargar deuda preexistente</button><button class="btn bg" onclick="mPL()">+ Registrar pago</button></div>'
     +consCols;
 }
 
@@ -751,78 +735,6 @@ function delDeudaPrex(id){
     C.ingresos=C.ingresos.filter(function(i){return i.id!==id;});
     nav('deudas');toast('Deuda eliminada');
   }).catch(function(){toast('Error al eliminar');});
-}
-
-// ===== EMITIR CUOTAS DEL MES =====
-function propsParaEmitir(cid,mes){
-  var ps=C.propietarios.filter(function(p){return !cid||p.consorcio_id===cid;});
-  return ps.map(function(p){
-    var yaEmitida=C.ingresos.some(function(i){
-      return i.propietario_id===p.id
-        && typeof i.concepto==='string'
-        && i.concepto.trim().indexOf('CUOTA_EMITIDA:')===0
-        && i.fecha && i.fecha.slice(0,7)===mes;
-    });
-    return {prop:p,cuota:Number(p.cuota_fija)||0,yaEmitida:yaEmitida};
-  });
-}
-
-function mEmitirCuotas(){
-  if(!C.consorcios.length)return toast('Sin consorcios');
-  var opts='<option value="">Todos los consorcios</option>'
-    +C.consorcios.map(function(c){return '<option value="'+c.id+'">'+c.nombre+'</option>';}).join('');
-  om('<div class="mt">Emitir cuotas del mes <button class="btn bo bs" onclick="cm()">✕</button></div>'
-    +'<div class="al ai" style="margin-bottom:16px">Genera la cuota del mes para cada unidad segun su cuota fija. Aparecera como deuda hasta que registres los pagos. Si una unidad ya tiene la cuota de ese mes, se omite (podes ejecutarlo sin duplicar).</div>'
-    +'<div class="fr">'
-    +'<div class="fg"><label>Consorcio</label><select id="ec-cons" onchange="prevEmitir()">'+opts+'</select></div>'
-    +'<div class="fg"><label>Periodo</label><input type="month" id="ec-mes" value="'+ma()+'" onchange="prevEmitir()"></div>'
-    +'</div>'
-    +'<div id="ec-prev" style="margin:8px 0 16px"></div>'
-    +'<button class="btn bg" onclick="ejecutarEmitir()" style="width:100%">Emitir cuotas</button>');
-  prevEmitir();
-}
-
-function prevEmitir(){
-  var box=document.getElementById('ec-prev');
-  if(!box)return;
-  var cid=document.getElementById('ec-cons').value;
-  var mes=document.getElementById('ec-mes').value;
-  if(!mes){box.innerHTML='';return;}
-  var lista=propsParaEmitir(cid,mes);
-  var aEmitir=lista.filter(function(x){return !x.yaEmitida && x.cuota>0;});
-  var yaTienen=lista.filter(function(x){return x.yaEmitida;});
-  var sinCuota=lista.filter(function(x){return !x.yaEmitida && x.cuota<=0;});
-  var total=aEmitir.reduce(function(s,x){return s+x.cuota;},0);
-  var partes=mes.split('-');
-  var ml=MN[parseInt(partes[1])-1]+' '+partes[0];
-  var h='<div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a">';
-  h+='<div style="font-size:13px;font-weight:700;margin-bottom:8px">Cuota '+ml+'</div>';
-  h+='<div style="font-size:13px;color:var(--green)">Se emitiran '+aEmitir.length+' cuota(s) — Total '+$m(total)+'</div>';
-  if(yaTienen.length)h+='<div style="font-size:12px;color:var(--orange);margin-top:4px">'+yaTienen.length+' unidad(es) ya tienen la cuota de este mes (se omiten)</div>';
-  if(sinCuota.length)h+='<div style="font-size:12px;color:var(--text3);margin-top:4px">'+sinCuota.length+' unidad(es) sin cuota fija definida (se omiten)</div>';
-  h+='</div>';
-  box.innerHTML=h;
-}
-
-function ejecutarEmitir(){
-  var cid=document.getElementById('ec-cons').value;
-  var mes=document.getElementById('ec-mes').value;
-  if(!mes)return toast('Selecciona el periodo');
-  var partes=mes.split('-');
-  var ml=MN[parseInt(partes[1])-1]+' '+partes[0];
-  var fecha=mes+'-01';
-  var lista=propsParaEmitir(cid,mes).filter(function(x){return !x.yaEmitida && x.cuota>0;});
-  if(!lista.length)return toast('No hay cuotas para emitir');
-  var promesas=lista.map(function(x){
-    var o={id:uid(),propietario_id:x.prop.id,monto:0,fecha:fecha,concepto:'CUOTA_EMITIDA:'+x.cuota,comprobante:'Cuota '+ml,pagado_por:'Sistema'};
-    return dp('ingresos',o).then(function(r){
-      if(r.ok)C.ingresos.push(o);
-      else return r.text().then(function(e){throw new Error(e);});
-    });
-  });
-  Promise.all(promesas).then(function(){
-    cm();nav('deudas');toast('Cuotas emitidas: '+lista.length+' — '+ml);
-  }).catch(function(e){toast('Error: '+e.message.slice(0,70));});
 }
 
 // ===== CONSORCIOS =====
