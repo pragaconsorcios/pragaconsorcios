@@ -262,7 +262,7 @@ td.p{color:var(--text);font-weight:600}
         <span class="page-title" id="pt">Dashboard</span>
       </div>
       <div class="topbar-r">
-        <div class="search-box"><span>🔍</span><input placeholder="Buscar..."></div>
+        <div class="search-box"><span>🔍</span><input placeholder="Buscar..." onkeydown="if(event.key==='Enter')doSearch(this.value)"></div>
         <span id="dbs" class="pill pgr" style="font-size:11px">Conectando...</span>
         <span id="ta" style="display:none" class="pill pr"><span id="at"></span></span>
         <div class="notif-btn" id="notif-wrap" style="display:none">🔔<span class="notif-badge" id="notif-count">0</span></div>
@@ -525,6 +525,40 @@ function nav(page,back){
   else el.style.display='none';
 }
 function goBack(){if(PP)nav(PP);}
+  function doSearch(q){
+  q=(q||'').trim().toLowerCase();
+  if(!q)return;
+  var cons=C.consorcios.filter(function(c){
+    return (c.nombre||'').toLowerCase().indexOf(q)>=0||(c.direccion||'').toLowerCase().indexOf(q)>=0;
+  });
+  var props=C.propietarios.filter(function(p){
+    return (p.nombre||'').toLowerCase().indexOf(q)>=0
+      ||(p.piso_dpto||p.unidad||'').toLowerCase().indexOf(q)>=0
+      ||(p.telefono||'').toLowerCase().indexOf(q)>=0
+      ||(p.inquilino||'').toLowerCase().indexOf(q)>=0;
+  });
+  document.getElementById('pt').textContent='Busqueda';
+  document.getElementById('bw').style.display='inline';
+  PP='dashboard';
+  var html='<div class="card"><div class="card-title" style="margin-bottom:14px">Resultados para "'+q+'"</div>';
+  if(cons.length){
+    html+='<div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:8px 0">Consorcios</div>';
+    html+=cons.map(function(c){
+      return '<div class="ri" style="cursor:pointer" onclick="vC(\''+c.id+'\')"><span style="font-size:18px">🏢</span><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)">'+c.nombre+'</div><div style="font-size:11px;color:var(--text3)">'+(c.direccion||'')+'</div></div></div>';
+    }).join('');
+  }
+  if(props.length){
+    html+='<div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:14px 0 8px">Propietarios</div>';
+    html+=props.map(function(p){
+      var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});
+      var d=calcDeudaProp(p.id);
+      return '<div class="ri" style="cursor:pointer" onclick="vPP(\''+p.id+'\')"><div class="av">'+p.nombre.slice(0,2).toUpperCase()+'</div><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)">'+p.nombre+'</div><div style="font-size:11px;color:var(--text3)">'+(c?c.nombre:'-')+' · '+(p.piso_dpto||p.unidad||'-')+'</div></div><div style="font-size:13px;font-weight:700;color:'+(d.total>0?'var(--red)':'var(--green)')+'">'+(d.total>0?$m(d.total):'Al dia ✓')+'</div></div>';
+    }).join('');
+  }
+  if(!cons.length&&!props.length) html+='<div class="empty">Sin resultados para "'+q+'"</div>';
+  html+='</div>';
+  document.getElementById('ct').innerHTML=html;
+}
 
 function meses6(){
   var r=[];
