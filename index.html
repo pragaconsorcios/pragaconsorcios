@@ -2,8 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Praga Consorcios</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0D0D0F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Praga">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -1139,6 +1146,13 @@ function showPropPortal(pid){
   document.getElementById('ct').innerHTML='<div style="max-width:720px;margin:0 auto"><div class="card"><div style="display:flex;align-items:center;gap:16px;margin-bottom:20px"><div class="av" style="width:52px;height:52px;font-size:18px">'+p.nombre.slice(0,2).toUpperCase()+'</div><div><div style="font-size:17px;font-weight:700">'+p.nombre+'</div><div style="font-size:12px;color:var(--text3);margin-top:3px">'+(c?c.nombre:'-')+' · '+(p.piso_dpto||p.unidad||'-')+'</div></div></div><div class="stat-grid"><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Saldo</div><div class="stat-value" style="color:'+(d.saldo>0?'var(--orange)':'var(--green)')+'">'+$m(d.saldo)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Interes mora</div><div class="stat-value" style="color:'+(d.intereses>0?'var(--red)':'var(--text3)')+'">'+$m(d.intereses)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Total deuda</div><div class="stat-value" style="color:'+(d.total>0?'var(--red)':'var(--green)')+'">'+$m(d.total)+'</div></div></div>'+(d.total>0?'<div class="al aw" style="margin-top:16px;margin-bottom:0">Tenes deuda pendiente.</div>':'<div class="al as" style="margin-top:16px;margin-bottom:0">Estas al dia. ✓</div>')+'</div><div class="card"><div class="card-title" style="margin-bottom:14px">Mis mensajes</div>'+(msgs.length?mH:'<div class="empty">Sin mensajes</div>')+'<hr style="border-color:#1e1e2a;margin:16px 0"><div style="font-size:13px;font-weight:600;margin-bottom:12px">Enviar mensaje</div><div class="fg" style="margin-bottom:10px"><label>Asunto</label><input id="msg-asunto" placeholder="Consulta o comentario"></div><div class="fg" style="margin-bottom:12px"><label>Mensaje</label><textarea id="msg-cuerpo" rows="3"></textarea></div><button class="btn bg" onclick="eMsgP(\''+pid+'\')">Enviar</button></div><div class="card"><div class="card-title" style="margin-bottom:14px">Historial de pagos</div>'+(pagos.length?'<table><thead><tr><th>Monto</th><th>Fecha</th><th>Concepto</th><th>Comprobante</th></tr></thead><tbody>'+pH+'</tbody></table>':'<div class="empty">Sin pagos</div>')+'</div><div class="card"><div class="card-title" style="margin-bottom:14px">Comunicaciones</div>'+(comms.length?cH:'<div class="empty">Sin comunicaciones</div>')+'</div><div style="text-align:center;margin-top:20px"><button class="btn bo" onclick="logout()">Cerrar sesion</button></div></div>';
 }
 function eMsgP(pid){var asunto=document.getElementById('msg-asunto').value.trim();var cuerpo=document.getElementById('msg-cuerpo').value.trim();if(!asunto||!cuerpo)return toast('Completa asunto y mensaje');var o={id:uid(),de:'prop_'+pid,de_nombre:CU.nombre,para_prop_id:null,asunto:asunto,cuerpo:cuerpo,leido:false};dp('mensajes',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});toast('Mensaje enviado');document.getElementById('msg-asunto').value='';document.getElementById('msg-cuerpo').value='';}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
 </script>
 </body>
 </html>
