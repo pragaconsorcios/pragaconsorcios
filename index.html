@@ -177,6 +177,20 @@ td.p{color:var(--text);font-weight:600}
 .liq-tot{display:flex;justify-content:space-between;padding:10px 12px;font-weight:700;font-size:14px;border-top:2px solid #1e1e2a;margin-top:4px}
 .cb{height:6px;border-radius:3px;background:var(--dark3);overflow:hidden;margin-top:6px}
 .cf{height:100%;border-radius:3px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap}
+.cal-nav{display:flex;align-items:center;gap:6px}
+.cal-title{font-size:16px;font-weight:700;color:var(--text);min-width:140px;text-align:center;flex:1}
+.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+.cal-dow span{text-align:center;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-cell{min-height:74px;background:var(--dark3);border:1px solid #1e1e2a;border-radius:8px;padding:5px;cursor:pointer;transition:border-color .15s;overflow:hidden}
+.cal-cell:hover{border-color:rgba(201,168,76,.35)}
+.cal-cell.empty{background:transparent;border:none;cursor:default}
+.cal-cell.today{border-color:var(--gold)}
+.cal-daynum{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:3px}
+.cal-cell.today .cal-daynum{color:var(--gold)}
+.cal-ev{font-size:9px;line-height:1.4;padding:1px 5px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#111;font-weight:600}
+.cal-more{font-size:9px;color:var(--text3);font-weight:600}
 @media(max-width:768px){
   .sidebar{transform:translateX(-220px);box-shadow:8px 0 32px rgba(0,0,0,.6)}
   .sidebar.open{transform:translateX(0)}
@@ -211,6 +225,12 @@ td.p{color:var(--text);font-weight:600}
   /* Graficas responsivas */
   .chart-bar-wrap{height:120px}
   .donut-wrap{flex-wrap:wrap;gap:14px}
+  /* Calendario compacto */
+  .cal-cell{min-height:56px;padding:3px}
+  .cal-grid,.cal-dow{gap:4px}
+  .cal-ev{font-size:8px;padding:1px 3px}
+  .cal-daynum{font-size:11px}
+  .cal-title{font-size:14px;min-width:0}
 }
 @media(max-width:380px){
   .stat-grid{grid-template-columns:1fr!important}
@@ -257,6 +277,7 @@ td.p{color:var(--text);font-weight:600}
       <div class="ns">Principal</div>
       <div class="ni active" onclick="nav('dashboard')"><span class="ni-icon">🏠</span>Dashboard</div>
       <div class="ni" onclick="nav('caja')"><span class="ni-icon">💵</span>Estado de Caja</div>
+      <div class="ni" onclick="nav('calendario')"><span class="ni-icon">📅</span>Calendario</div>
       <div class="ns">Gestion</div>
       <div class="ni" onclick="nav('consorcios')"><span class="ni-icon">🏢</span>Consorcios</div>
       <div class="ni" onclick="nav('gastos')"><span class="ni-icon">📋</span>Gastos</div>
@@ -308,7 +329,7 @@ var SU='https://ylsakdugmhsddapodlfs.supabase.co';
 var SK='sb_publishable_q1b1d0XL5KZqH4SXSWrgFQ_FWvt6yQB';
 var AD={juanchi:'juanchi98',facu:'facu98'};
 var CU=null,PP=null,CID=null;
-var C={consorcios:[],propietarios:[],gastos:[],ingresos:[],mantenimiento:[],recordatorios:[],comunicaciones:[],clientes:[],mensajes:[]};
+var C={consorcios:[],propietarios:[],gastos:[],ingresos:[],mantenimiento:[],recordatorios:[],comunicaciones:[],clientes:[],mensajes:[],eventos:[]};
 var CFG={on:true,tasa:10,dia:10};
 var MN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 var COLORES=['#C9A84C','#00C896','#4D8EFF','#FF4D6A','#FF8C42','#A855F7'];
@@ -531,7 +552,7 @@ function updMB(){
   if(nw&&nc){nw.style.display=n>0?'flex':'none';nc.textContent=n;}
 }
 
-var TITLES={dashboard:'Dashboard',caja:'Estado de Caja',consorcios:'Consorcios',gastos:'Gastos',ingresos:'Ingresos',deudas:'Deudas',morosos:'Morosos',liquidacion:'Liquidacion',mantenimiento:'Mantenimiento',recordatorios:'Recordatorios',mensajes:'Mensajes',comunicaciones:'Comunicaciones',clientes:'Nuevos Clientes',configuracion:'Configuracion',portal:'Portal Propietarios'};
+var TITLES={dashboard:'Dashboard',caja:'Estado de Caja',calendario:'Calendario',consorcios:'Consorcios',gastos:'Gastos',ingresos:'Ingresos',deudas:'Deudas',morosos:'Morosos',liquidacion:'Liquidacion',mantenimiento:'Mantenimiento',recordatorios:'Recordatorios',mensajes:'Mensajes',comunicaciones:'Comunicaciones',clientes:'Nuevos Clientes',configuracion:'Configuracion',portal:'Portal Propietarios'};
 
 function nav(page,back){
   PP=back||null;
@@ -541,7 +562,7 @@ function nav(page,back){
   var sb=document.getElementById('sb'),ov=document.getElementById('overlay');
   if(sb)sb.classList.remove('open');
   if(ov)ov.classList.remove('open');
-  var pages={dashboard:pgD,caja:pgCaja,consorcios:pgC,gastos:pgG,ingresos:pgI,deudas:pgDeudas,morosos:pgM,liquidacion:pgL,mantenimiento:pgMt,recordatorios:pgR,mensajes:pgMsg,comunicaciones:pgComm,clientes:pgCli,configuracion:pgCfg,portal:pgPortal};
+  var pages={dashboard:pgD,caja:pgCaja,calendario:pgCal,consorcios:pgC,gastos:pgG,ingresos:pgI,deudas:pgDeudas,morosos:pgM,liquidacion:pgL,mantenimiento:pgMt,recordatorios:pgR,mensajes:pgMsg,comunicaciones:pgComm,clientes:pgCli,configuracion:pgCfg,portal:pgPortal};
   document.getElementById('ct').innerHTML=(pages[page]||pgD)();
   var mor=C.propietarios.filter(function(p){return calcDeudaProp(p.id).total>0;});
   var venc=C.recordatorios.filter(function(r){return r.activo&&r.dia===dom();});
@@ -1074,6 +1095,91 @@ function mAR(){var opts=C.consorcios.map(function(c){return '<option value="'+c.
 function sR(){var n=document.getElementById('rn').value.trim();var d=parseInt(document.getElementById('rd').value);if(!n||!d||d<1||d>31)return toast('Completa nombre y dia');var o={id:uid(),nombre:n,categoria:document.getElementById('rcat').value,dia:d,consorcio_id:document.getElementById('rc').value||null,activo:true};dp('recordatorios',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});C.recordatorios.unshift(o);cm();nav('recordatorios');toast('Recordatorio agregado');}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
 function tR2(id,act){dpa('recordatorios',id,{activo:!act}).then(function(){var r=C.recordatorios.find(function(x){return x.id===id;});if(r)r.activo=!act;nav('recordatorios');}).catch(function(){toast('Error');});}
 function dR(id){if(!confirm('Eliminar?'))return;dd('recordatorios',id).then(function(){C.recordatorios=C.recordatorios.filter(function(r){return r.id!==id;});nav('recordatorios');}).catch(function(){toast('Error');});}
+
+// ===== CALENDARIO =====
+var CAL={y:null,m:null};
+var EVCOL={tarea:'#4D8EFF',recordatorio:'#C9A84C',reunion:'#A855F7',pago:'#FF4D6A',mantenimiento:'#00C896',otro:'#9090A8'};
+var EVLBL={tarea:'Tarea',recordatorio:'Recordatorio',reunion:'Reunion',pago:'Pago/Vencimiento',mantenimiento:'Mantenimiento',otro:'Otro'};
+function pad2(n){return String(n).padStart(2,'0');}
+function calInit(){if(CAL.y===null){var d=new Date();CAL.y=d.getFullYear();CAL.m=d.getMonth();}}
+function calMove(delta){calInit();CAL.m+=delta;if(CAL.m<0){CAL.m=11;CAL.y--;}if(CAL.m>11){CAL.m=0;CAL.y++;}document.getElementById('ct').innerHTML=pgCal();}
+function calHoy(){var d=new Date();CAL.y=d.getFullYear();CAL.m=d.getMonth();document.getElementById('ct').innerHTML=pgCal();}
+
+function eventosDelDia(fecha,dia){
+  var lista=[];
+  C.eventos.forEach(function(e){if(e.fecha===fecha)lista.push({tipo:e.tipo||'otro',titulo:e.titulo,hora:e.hora,id:e.id,nota:e.nota,editable:true});});
+  C.mantenimiento.forEach(function(m){if(m.fecha_inicio===fecha)lista.push({tipo:'mantenimiento',titulo:m.descripcion,editable:false});});
+  C.recordatorios.forEach(function(r){if(r.activo&&r.dia===dia)lista.push({tipo:'recordatorio',titulo:r.nombre,editable:false});});
+  return lista;
+}
+
+function pgCal(){
+  calInit();
+  var y=CAL.y,m=CAL.m;
+  var mesKey=y+'-'+pad2(m+1);
+  var primero=new Date(y,m,1).getDay();
+  var offset=(primero+6)%7;
+  var dias=new Date(y,m+1,0).getDate();
+  var hoy=new Date();
+  var esHoyMes=(hoy.getFullYear()===y&&hoy.getMonth()===m);
+  var dow=['Lun','Mar','Mie','Jue','Vie','Sab','Dom'];
+  var dowH=dow.map(function(d){return '<span>'+d+'</span>';}).join('');
+  var celdas='';
+  for(var i=0;i<offset;i++)celdas+='<div class="cal-cell empty"></div>';
+  for(var dia=1;dia<=dias;dia++){
+    var fecha=y+'-'+pad2(m+1)+'-'+pad2(dia);
+    var evs=eventosDelDia(fecha,dia);
+    var chips=evs.slice(0,3).map(function(e){return '<div class="cal-ev" style="background:'+(EVCOL[e.tipo]||EVCOL.otro)+'">'+(e.hora?e.hora+' ':'')+e.titulo+'</div>';}).join('');
+    var more=evs.length>3?'<div class="cal-more">+'+(evs.length-3)+' mas</div>':'';
+    var cls='cal-cell'+(esHoyMes&&dia===hoy.getDate()?' today':'');
+    celdas+='<div class="'+cls+'" onclick="abrirDia(\''+fecha+'\','+dia+')"><div class="cal-daynum">'+dia+'</div>'+chips+more+'</div>';
+  }
+  var agenda=C.eventos.filter(function(e){return e.fecha&&e.fecha.slice(0,7)===mesKey;}).sort(function(a,b){return (a.fecha+(a.hora||''))>(b.fecha+(b.hora||''))?1:-1;});
+  var agendaH=agenda.length?agenda.map(function(e){
+    var c=e.consorcio_id?C.consorcios.find(function(x){return x.id===e.consorcio_id;}):null;
+    return '<div class="ri"><span style="width:10px;height:10px;border-radius:3px;background:'+(EVCOL[e.tipo]||EVCOL.otro)+';flex-shrink:0"></span><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)">'+(e.hecho?'<span style="text-decoration:line-through;opacity:.6">'+e.titulo+'</span>':e.titulo)+'</div><div style="font-size:11px;color:var(--text3)">'+e.fecha+(e.hora?' · '+e.hora:'')+' · '+(EVLBL[e.tipo]||'Otro')+(c?' · '+c.nombre:'')+(e.nota?' · '+e.nota:'')+'</div></div><button class="btn bo bs" onclick="toggleEvento(\''+e.id+'\','+(e.hecho?'true':'false')+')">'+(e.hecho?'↺':'✓')+'</button> <button class="btn bd bs" onclick="dEvento(\''+e.id+'\')">✕</button></div>';
+  }).join(''):'<div class="empty" style="padding:20px">Sin eventos este mes</div>';
+  var leyenda=Object.keys(EVLBL).map(function(k){return '<div class="leg-item"><span class="leg-dot" style="background:'+EVCOL[k]+'"></span>'+EVLBL[k]+'</div>';}).join('');
+  var nombreMes=MN[m]+' '+y;
+  return '<div class="card"><div class="cal-head"><div class="cal-nav"><button class="btn bo bs" onclick="calMove(-1)">‹</button><button class="btn bo bs" onclick="calHoy()">Hoy</button><button class="btn bo bs" onclick="calMove(1)">›</button></div><div class="cal-title">'+nombreMes+'</div><button class="btn bg" onclick="abrirDia(\''+(y+'-'+pad2(m+1)+'-'+pad2(esHoyMes?hoy.getDate():1))+'\','+(esHoyMes?hoy.getDate():1)+')">+ Nuevo evento</button></div><div class="cal-dow">'+dowH+'</div><div class="cal-grid">'+celdas+'</div><div class="chart-legend" style="margin-top:16px;flex-wrap:wrap">'+leyenda+'</div></div>'
+    +'<div class="card"><div class="card-title" style="margin-bottom:14px">Agenda de '+nombreMes+'</div>'+agendaH+'</div>';
+}
+
+function abrirDia(fecha,dia){
+  var evs=eventosDelDia(fecha,dia);
+  var optsCons='<option value="">— Sin consorcio —</option>'+C.consorcios.map(function(c){return '<option value="'+c.id+'">'+c.nombre+'</option>';}).join('');
+  var optsTipo=Object.keys(EVLBL).map(function(k){return '<option value="'+k+'">'+EVLBL[k]+'</option>';}).join('');
+  var lista=evs.length?evs.map(function(e){
+    return '<div class="ri"><span style="width:10px;height:10px;border-radius:3px;background:'+(EVCOL[e.tipo]||EVCOL.otro)+';flex-shrink:0"></span><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)">'+(e.hora?e.hora+' · ':'')+e.titulo+'</div><div style="font-size:11px;color:var(--text3)">'+(EVLBL[e.tipo]||'Otro')+(e.editable?'':' · (automatico)')+'</div></div>'+(e.editable?'<button class="btn bd bs" onclick="dEvento(\''+e.id+'\',\''+fecha+'\','+dia+')">✕</button>':'')+'</div>';
+  }).join(''):'<div class="empty" style="padding:14px">Sin eventos este dia</div>';
+  om('<div class="mt">'+fecha+' <button class="btn bo bs" onclick="cm()">✕</button></div>'
+    +'<div style="margin-bottom:16px">'+lista+'</div>'
+    +'<hr style="border-color:#1e1e2a;margin:12px 0">'
+    +'<div style="font-size:13px;font-weight:600;margin-bottom:12px">Agregar evento</div>'
+    +'<div class="fg" style="margin-bottom:12px"><label>Titulo</label><input id="ev-tit" placeholder="Ej: Reunion de consorcio"></div>'
+    +'<div class="fr"><div class="fg"><label>Tipo</label><select id="ev-tipo">'+optsTipo+'</select></div><div class="fg"><label>Hora (opcional)</label><input id="ev-hora" type="time"></div></div>'
+    +'<div class="fg" style="margin-bottom:12px"><label>Consorcio (opcional)</label><select id="ev-cons">'+optsCons+'</select></div>'
+    +'<div class="fg" style="margin-bottom:16px"><label>Nota (opcional)</label><textarea id="ev-nota" rows="2"></textarea></div>'
+    +'<input type="hidden" id="ev-fecha" value="'+fecha+'"><input type="hidden" id="ev-dia" value="'+dia+'">'
+    +'<button class="btn bg" onclick="sEvento()" style="width:100%">Guardar evento</button>');
+}
+
+function sEvento(){
+  var tit=document.getElementById('ev-tit').value.trim();
+  if(!tit)return toast('Ingresa un titulo');
+  var o={id:uid(),fecha:document.getElementById('ev-fecha').value,hora:document.getElementById('ev-hora').value||'',titulo:tit,tipo:document.getElementById('ev-tipo').value,consorcio_id:document.getElementById('ev-cons').value||null,nota:document.getElementById('ev-nota').value||'',hecho:false};
+  dp('eventos',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});C.eventos.unshift(o);cm();document.getElementById('ct').innerHTML=pgCal();toast('Evento agregado');}).catch(function(e){toast('Error: '+e.message.slice(0,80));});
+}
+
+function dEvento(id,fecha,dia){
+  if(!confirm('Eliminar este evento?'))return;
+  dd('eventos',id).then(function(){C.eventos=C.eventos.filter(function(e){return e.id!==id;});if(fecha){abrirDia(fecha,dia);}else{document.getElementById('ct').innerHTML=pgCal();}toast('Eliminado');}).catch(function(){toast('Error');});
+}
+
+function toggleEvento(id,hecho){
+  var nuevo=!(hecho===true||hecho==='true');
+  dpa('eventos',id,{hecho:nuevo}).then(function(){var e=C.eventos.find(function(x){return x.id===id;});if(e)e.hecho=nuevo;document.getElementById('ct').innerHTML=pgCal();}).catch(function(){toast('Error');});
+}
 
 // ===== MENSAJES =====
 function pgMsg(){var inbox=C.mensajes.filter(function(m){return m.de&&m.de.indexOf('prop_')===0;});var sent=C.mensajes.filter(function(m){return m.de&&m.de.indexOf('admin_')===0;});var opts=C.propietarios.map(function(p){var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});return '<option value="'+p.id+'">'+p.nombre+' — '+(p.piso_dpto||p.unidad||'-')+(c?' ('+c.nombre+')':'')+'</option>';}).join('');var iH=inbox.length?inbox.map(function(m){return '<div class="ri" style="cursor:pointer"><div class="av" onclick="vMsg(\''+m.id+'\')">'+(m.de_nombre||'?').slice(0,2).toUpperCase()+'</div><div style="flex:1" onclick="vMsg(\''+m.id+'\')"><div style="display:flex;justify-content:space-between"><div style="font-size:13px;font-weight:'+(!m.leido?'700':'500')+';color:var(--text)">'+m.asunto+(!m.leido?' <span class="pill pb">Nuevo</span>':'')+'</div><div style="font-size:11px;color:var(--text3)">'+(m.created_at?m.created_at.slice(0,10):'')+'</div></div><div style="font-size:12px;color:var(--text3);margin-top:2px">De: '+(m.de_nombre||'-')+'</div></div><button class="btn bd bs" style="margin-left:8px;flex-shrink:0" onclick="dMsg(\''+m.id+'\')">✕</button></div>';}).join(''):'<div class="empty" style="padding:20px">Sin mensajes</div>';var sH=sent.length?sent.map(function(m){var p=C.propietarios.find(function(x){return x.id===m.para_prop_id;});return '<div class="ri"><div class="av">'+(m.de_nombre||'?').slice(0,2).toUpperCase()+'</div><div style="flex:1"><div style="display:flex;justify-content:space-between"><div style="font-size:13px;font-weight:600;color:var(--text)">'+m.asunto+'</div><div style="font-size:11px;color:var(--text3)">'+(m.created_at?m.created_at.slice(0,10):'')+'</div></div><div style="font-size:12px;color:var(--text3);margin-top:2px">Para: '+(p?p.nombre:'-')+'</div></div><button class="btn bd bs" style="margin-left:8px;flex-shrink:0" onclick="dMsg(\''+m.id+'\')">✕</button></div>';}).join(''):'<div class="empty" style="padding:20px">Sin enviados</div>';return '<div class="card" style="margin-bottom:16px"><div class="card-title" style="margin-bottom:16px">Nuevo mensaje</div><div class="fg" style="margin-bottom:12px"><label>Para</label><select id="msg-para"><option value="">Selecciona propietario</option>'+opts+'</select></div><div class="fg" style="margin-bottom:12px"><label>Asunto</label><input id="msg-asunto" placeholder="Asunto"></div><div class="fg" style="margin-bottom:14px"><label>Mensaje</label><textarea id="msg-cuerpo" rows="3"></textarea></div><button class="btn bg" onclick="eMsg()">Enviar</button></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px"><div class="card"><div class="card-title" style="margin-bottom:14px">Recibidos '+(inbox.filter(function(m){return !m.leido;}).length>0?'<span class="pill pr">'+inbox.filter(function(m){return !m.leido;}).length+' nuevos</span>':'')+'</div>'+iH+'</div><div class="card"><div class="card-title" style="margin-bottom:14px">Enviados</div>'+sH+'</div></div>';}
