@@ -372,6 +372,34 @@ tr:hover td{background:rgba(255,255,255,.025)!important}
 .logo{padding-top:calc(24px + env(safe-area-inset-top))}
 .sidebar-footer{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
 .content{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+
+/* ======================================================================
+   CUSTOM SELECT / COMBOBOX — reemplaza el look nativo del navegador.
+   El <select> real queda oculto y sigue siendo la fuente de verdad.
+   ====================================================================== */
+.cs-wrap{position:relative;width:100%}
+.cs-native{position:absolute!important;width:1px;height:1px;opacity:0;pointer-events:none;margin:0;padding:0;border:0;clip:rect(0 0 0 0);overflow:hidden}
+.select-trigger{height:44px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(18,20,27,.88);border:1px solid rgba(255,255,255,.10);border-radius:10px;color:var(--color-text-primary);padding:0 14px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;text-align:left;transition:border-color .18s ease,box-shadow .18s ease}
+.select-trigger:hover{border-color:var(--color-brand-border)}
+.select-trigger[data-open="true"],.select-trigger:focus-visible{border-color:rgba(212,175,55,.5);box-shadow:0 0 0 3px rgba(212,175,55,.10);outline:none}
+.cs-trig-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.select-trigger.cs-placeholder .cs-trig-label{color:var(--color-text-muted);font-weight:500}
+.cs-chev{width:16px;height:16px;flex-shrink:0;color:var(--color-text-muted);transition:transform .2s ease}
+.select-trigger[data-open="true"] .cs-chev{transform:rotate(180deg);color:var(--color-brand)}
+.select-dropdown{position:fixed;z-index:1200;background:rgba(18,20,27,.98);border:1px solid rgba(212,175,55,.18);border-radius:12px;box-shadow:0 18px 45px rgba(0,0,0,.45);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);overflow:hidden;padding:6px;display:flex;flex-direction:column;max-height:320px}
+.cs-search-wrap{padding:2px 2px 6px;flex-shrink:0}
+.cs-search{width:100%;height:38px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:8px;color:var(--color-text-primary);padding:0 12px;font-size:13px;outline:none;font-family:inherit}
+.cs-search::placeholder{color:var(--color-text-muted)}
+.cs-search:focus{border-color:rgba(212,175,55,.45);box-shadow:0 0 0 3px rgba(212,175,55,.10)}
+.cs-list{overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:2px;min-height:0}
+.select-option{min-height:38px;padding:8px 12px;border-radius:8px;color:#D8DAE3;font-size:13px;font-weight:500;display:flex;flex-direction:column;gap:2px;cursor:pointer}
+.select-option:hover{background:rgba(212,175,55,.10);color:var(--color-text-primary)}
+.select-option[data-selected="true"]{background:rgba(212,175,55,.16);color:var(--color-brand)}
+.select-option-title{color:var(--color-text-primary);font-weight:600}
+.select-option[data-selected="true"] .select-option-title{color:var(--color-brand)}
+.select-option-meta{color:#8F93A3;font-size:12px}
+.cs-empty{padding:14px 12px;color:var(--color-text-muted);font-size:13px;text-align:center}
+.cs-list::-webkit-scrollbar{width:5px}.cs-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:4px}
 </style>
 </head>
 <body>
@@ -1448,18 +1476,44 @@ if('serviceWorker' in navigator){
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>
 (function(){
-  var ct=document.getElementById('ct'), obs=null, queued=false;
-  function paint(){
-    queued=false;
-    if(!(window.lucide&&lucide.createIcons))return;
-    if(obs)obs.disconnect();
-    try{ lucide.createIcons(); }catch(e){}
-    if(obs&&ct)obs.observe(ct,{childList:true,subtree:true});
+  /* ===== Custom select / combobox (mejora visual de los <select> nativos) ===== */
+  function esc(s){return (s+'').replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];});}
+  function parseOpt(t){var i=t.indexOf(' — ');if(i>-1){var title=t.slice(0,i).trim();var rest=t.slice(i+3).trim().replace(/\s*\(([^)]+)\)\s*$/,' · $1');return{title:title,meta:rest};}return{title:t.trim(),meta:''};}
+  function looksProp(sel){for(var i=0;i<sel.options.length;i++){if(sel.options[i].text.indexOf(' — ')>-1)return true;}return false;}
+  function sweep(){var l=document.querySelectorAll('.select-dropdown');for(var i=0;i<l.length;i++){if(l[i].__trig&&!document.body.contains(l[i].__trig))l[i].remove();}}
+  function enhance(sel){
+    if(sel.dataset.csEnhanced||sel.multiple)return; sel.dataset.csEnhanced='1';
+    var wrap=document.createElement('div');wrap.className='cs-wrap';
+    sel.parentNode.insertBefore(wrap,sel);wrap.appendChild(sel);sel.classList.add('cs-native');
+    var trig=document.createElement('button');trig.type='button';trig.className='select-trigger';
+    trig.innerHTML='<span class="cs-trig-label"></span><i data-lucide="chevron-down" class="cs-chev"></i>';
+    wrap.appendChild(trig);
+    var dd=document.createElement('div');dd.className='select-dropdown';dd.style.display='none';dd.__trig=trig;document.body.appendChild(dd);
+    var many=sel.options.length>=6, search=null;
+    if(many){var sw=document.createElement('div');sw.className='cs-search-wrap';search=document.createElement('input');search.className='cs-search';search.type='text';search.placeholder=looksProp(sel)?'Buscar propietario…':'Buscar…';sw.appendChild(search);dd.appendChild(sw);}
+    var list=document.createElement('div');list.className='cs-list';dd.appendChild(list);
+    function syncLabel(){var o=sel.options[sel.selectedIndex];var t=o?o.text:'';trig.querySelector('.cs-trig-label').textContent=t||'Seleccionar';trig.classList.toggle('cs-placeholder',!t||(o&&o.value===''));}
+    function build(f){list.innerHTML='';f=(f||'').toLowerCase();var n=0;for(var i=0;i<sel.options.length;i++){var o=sel.options[i];if(o.value===''&&/selecc/i.test(o.text))continue;if(f&&o.text.toLowerCase().indexOf(f)===-1)continue;var p=parseOpt(o.text);var el=document.createElement('div');el.className='select-option';if(i===sel.selectedIndex)el.setAttribute('data-selected','true');el.innerHTML=p.meta?'<span class="select-option-title">'+esc(p.title)+'</span><span class="select-option-meta">'+esc(p.meta)+'</span>':'<span class="select-option-title">'+esc(p.title)+'</span>';(function(idx){el.addEventListener('mousedown',function(e){e.preventDefault();pick(idx);});})(i);list.appendChild(el);n++;}if(!n){var em=document.createElement('div');em.className='cs-empty';em.textContent='Sin resultados';list.appendChild(em);}}
+    function pick(i){sel.selectedIndex=i;sel.dispatchEvent(new Event('change',{bubbles:true}));syncLabel();close();}
+    function pos(){var r=trig.getBoundingClientRect();dd.style.left=r.left+'px';dd.style.width=r.width+'px';dd.style.top=(r.bottom+6)+'px';var below=window.innerHeight-r.bottom-16;dd.style.maxHeight=Math.max(160,Math.min(320,below))+'px';}
+    var open=false;
+    function openDD(){if(open)return;build('');if(search)search.value='';dd.style.display='flex';pos();open=true;trig.setAttribute('data-open','true');if(window.lucide)try{lucide.createIcons();}catch(e){}if(search)setTimeout(function(){search.focus();},10);setTimeout(function(){document.addEventListener('mousedown',out,true);},0);window.addEventListener('scroll',close,true);window.addEventListener('resize',close);}
+    function close(){if(!open)return;dd.style.display='none';open=false;trig.removeAttribute('data-open');document.removeEventListener('mousedown',out,true);window.removeEventListener('scroll',close,true);window.removeEventListener('resize',close);}
+    function out(e){if(!dd.contains(e.target)&&!trig.contains(e.target))close();}
+    trig.addEventListener('click',function(e){e.preventDefault();open?close():openDD();});
+    if(search){search.addEventListener('input',function(){build(search.value);});search.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();var f=list.querySelector('.select-option');if(f)f.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}));}else if(e.key==='Escape'){close();}});}
+    sel.addEventListener('change',syncLabel);
+    syncLabel();
   }
-  function schedule(){ if(queued)return; queued=true; requestAnimationFrame(paint); }
-  schedule();
-  document.addEventListener('DOMContentLoaded',schedule);
-  if(ct){ obs=new MutationObserver(schedule); obs.observe(ct,{childList:true,subtree:true}); }
+  window.enhanceSelects=function(root){sweep();var ns=(root||document).querySelectorAll('select:not([data-cs-enhanced])');for(var i=0;i<ns.length;i++)enhance(ns[i]);};
+
+  /* ===== Loop de pintado: iconos Lucide + selects, sobre #ct y #mi ===== */
+  var ct=document.getElementById('ct'), mi=document.getElementById('mi'), obs=null, queued=false;
+  function targets(){return [ct,mi].filter(Boolean);}
+  function paint(){queued=false;if(obs)obs.disconnect();try{window.enhanceSelects(document);}catch(e){}try{if(window.lucide)lucide.createIcons();}catch(e){}if(obs)targets().forEach(function(t){obs.observe(t,{childList:true,subtree:true});});}
+  function schedule(){if(queued)return;queued=true;requestAnimationFrame(paint);}
+  schedule();document.addEventListener('DOMContentLoaded',schedule);
+  obs=new MutationObserver(schedule);targets().forEach(function(t){obs.observe(t,{childList:true,subtree:true});});
 })();
 </script>
 </body>
