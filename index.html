@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#0D0D0F">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Praga">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -362,6 +362,16 @@ tr:hover td{background:rgba(255,255,255,.025)!important}
   .btn,.lbtn{transition:background-color .15s ease,color .15s ease,border-color .15s ease!important}
   .btn:hover,.lbtn:hover,.btn:active,.lbtn:active{transform:none}
 }
+
+/* ======================================================================
+   iOS — pantalla completa bajo la status bar (status-bar-style translúcida).
+   El video llega "hasta arriba"; el contenido se aparta del notch/isla y
+   del home indicator usando las safe areas. env(...) = 0 en escritorio.
+   ====================================================================== */
+.topbar{padding-top:calc(12px + env(safe-area-inset-top))}
+.logo{padding-top:calc(24px + env(safe-area-inset-top))}
+.sidebar-footer{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+.content{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
 </style>
 </head>
 <body>
