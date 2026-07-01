@@ -1,6 +1,8 @@
 # Archivos de trabajo locales (no forman parte de la app publicada)
 .claude/
 preview-rediseno.html
+calendar-preview.html
+preview-recibo.html
 styleguide.html
 index.backup-*.html
 praga/

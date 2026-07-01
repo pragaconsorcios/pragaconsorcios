@@ -430,6 +430,36 @@ tr:hover td{background:rgba(255,255,255,.025)!important}
 .agenda-item .ag-meta{font-size:11px;color:var(--color-text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .agenda-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;border:1px solid transparent;white-space:nowrap;flex-shrink:0}
 .ag-acts{display:flex;gap:6px;flex-shrink:0}
+
+/* ====== Recibo de expensas por unidad (diferenciado) ====== */
+.rcb{max-width:440px;margin:0 auto}
+.rcb-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--color-border-soft);margin-bottom:14px}
+.rcb-brand{font-size:18px;font-weight:700;letter-spacing:1px;color:var(--gold);line-height:1.1}
+.rcb-brand small{display:block;font-size:8px;letter-spacing:2px;color:var(--color-text-muted);text-transform:uppercase;font-weight:600;margin-top:3px}
+.rcb-doc{text-align:right;font-size:12px}.rcb-doc .p{color:var(--color-text-secondary);margin-top:2px}
+.rcb-info{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;padding-bottom:14px;border-bottom:1px solid var(--color-border-soft)}
+.rcb-info .k{font-size:10px;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.rcb-info .v{font-size:13px;font-weight:600;margin-top:1px}
+.rcb-sec{margin:14px 0}
+.rcb-sh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.rcb-sh .tit{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700}
+.rcb-sh .tit .d{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.rcb-who{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.rcb-who.inq{color:#93C5FD;background:rgba(59,130,246,.14);border-color:rgba(59,130,246,.24)}
+.rcb-who.prop{color:var(--gold);background:var(--gold-dim);border-color:rgba(212,175,55,.28)}
+.rcb-line{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0;color:var(--color-text-secondary)}
+.rcb-sub{display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding:7px 0 2px;border-top:1px dashed rgba(255,255,255,.12);margin-top:4px}
+.rcb-total{display:flex;justify-content:space-between;align-items:center;background:var(--gold-dim);border:1px solid rgba(212,175,55,.28);border-radius:12px;padding:13px 16px;margin:14px 0}
+.rcb-total .k{font-size:12px;color:var(--color-text-secondary);font-weight:600}
+.rcb-total .v{font-size:22px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
+.rcb-rep{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.rcb-rc{background:rgba(14,16,22,.6);border:1px solid var(--color-border-soft);border-radius:12px;padding:11px}
+.rcb-rc .w{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.rcb-rc.inq .w{color:#93C5FD}.rcb-rc.prop .w{color:var(--gold)}
+.rcb-rc .nm{font-size:12px;color:var(--color-text-secondary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcb-rc .am{font-size:17px;font-weight:800;margin-top:5px;font-variant-numeric:tabular-nums}
+.rcb-rc.inq .am{color:#93C5FD}.rcb-rc.prop .am{color:var(--gold)}
+.rcb-note{font-size:10.5px;color:var(--color-text-muted);line-height:1.5;margin-top:8px}
 .cal-count{display:none}
 @media(max-width:768px){
   .cal-panel{padding:16px}
@@ -1222,12 +1252,50 @@ function genLiq(){
   var dRows=ps.map(function(p){
     var pM=iM.filter(function(i){return i.propietario_id===p.id;}).reduce(function(s,i){return s+Number(i.monto);},0);
     var d=calcDeudaProp(p.id);
-    return '<tr><td class="p">'+p.nombre+'</td><td>'+(p.piso_dpto||p.unidad||'-')+'</td><td>'+(p.alquilado?'Alquilado':'Propio')+'</td><td style="color:var(--gold)">'+$m(Number(p.cuota_fija||0))+'</td><td style="color:var(--green)">'+$m(pM)+'</td><td style="color:'+(d.total>0?'var(--red)':'var(--green)')+';font-weight:700">'+(d.total>0?$m(d.total):'Al dia ✓')+'</td></tr>';
+    return '<tr><td class="p">'+p.nombre+'</td><td>'+(p.piso_dpto||p.unidad||'-')+'</td><td>'+(p.alquilado?'Alquilado':'Propio')+'</td><td style="color:var(--gold)">'+$m(Number(p.cuota_fija||0))+'</td><td style="color:var(--green)">'+$m(pM)+'</td><td style="color:'+(d.total>0?'var(--red)':'var(--green)')+';font-weight:700">'+(d.total>0?$m(d.total):'Al dia ✓')+'</td><td><button class="btn bo bs" onclick="reciboUnidad(\''+p.id+'\',\''+cid+'\',\''+mes+'\')"><i data-lucide="receipt-text"></i> Recibo</button></td></tr>';
   }).join('');
   var gOH=gO.map(function(g){return '<div class="liq-row"><span>'+g.descripcion+(g.proveedor?' — '+g.proveedor:'')+'</span><span style="color:var(--blue)">'+$m(g.monto)+'</span></div>';}).join('');
   var gEH=gE.map(function(g){return '<div class="liq-row"><span>'+g.descripcion+(g.proveedor?' — '+g.proveedor:'')+'</span><span style="color:var(--red)">'+$m(g.monto)+'</span></div>';}).join('');
   var iH=iM.map(function(i){var p=C.propietarios.find(function(x){return x.id===i.propietario_id;});return '<div class="liq-row"><span>'+(p?p.nombre+' ('+(p.piso_dpto||p.unidad||'-')+')':'-')+'</span><span style="color:var(--green)">'+$m(i.monto)+'</span></div>';}).join('');
-  document.getElementById('lr').innerHTML='<div class="card"><div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #1e1e2a"><div style="font-size:18px;font-weight:800;color:var(--gold)">PRAGA Administracion de Consorcios</div><div style="font-size:14px;font-weight:600;margin-top:6px">Liquidacion — '+mL+'</div><div style="font-size:13px;color:var(--text3);margin-top:4px">'+cons.nombre+' · '+(cons.direccion||'')+'</div></div><div class="stat-grid" style="margin-bottom:20px"><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Ingresos</div><div class="stat-value" style="color:var(--green);font-size:18px">'+$m(tI)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Ordinarios</div><div class="stat-value" style="color:var(--blue);font-size:18px">'+$m(tO)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Extraordinarios</div><div class="stat-value" style="color:var(--red);font-size:18px">'+$m(tE)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Saldo</div><div class="stat-value" style="color:'+(saldo>=0?'var(--green)':'var(--red)')+';font-size:18px">'+$m(saldo)+'</div></div></div><div class="liq-section liq-ing"><div class="liq-t">Ingresos del periodo</div>'+(iH||'<div style="color:var(--text3);font-size:13px;padding:8px 12px">Sin ingresos</div>')+'<div class="liq-tot"><span>Total ingresos</span><span style="color:var(--green)">'+$m(tI)+'</span></div></div><div class="liq-section liq-ord"><div class="liq-t">Gastos ordinarios</div>'+(gOH||'<div style="color:var(--text3);font-size:13px;padding:8px 12px">Sin gastos</div>')+'<div class="liq-tot"><span>Total ordinarios</span><span style="color:var(--blue)">'+$m(tO)+'</span></div></div><div class="liq-section liq-ext"><div class="liq-t">Gastos extraordinarios</div>'+(gEH||'<div style="color:var(--text3);font-size:13px;padding:8px 12px">Sin gastos</div>')+'<div class="liq-tot"><span>Total extraordinarios</span><span style="color:var(--red)">'+$m(tE)+'</span></div></div><div style="background:var(--dark3);border-radius:var(--r);padding:16px;margin:16px 0"><div style="font-size:13px;font-weight:700;margin-bottom:12px">Estado por unidad</div><div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Tipo</th><th>Cuota</th><th>Pago mes</th><th>Deuda total</th></tr></thead><tbody>'+(dRows||'<tr><td colspan="6" style="text-align:center;color:var(--text3)">Sin propietarios</td></tr>')+'</tbody></table></div></div><div class="page-actions" style="margin-top:12px;margin-bottom:0"><button class="btn bg" onclick="window.print()"><i data-lucide="printer"></i> Imprimir</button></div></div>';
+  document.getElementById('lr').innerHTML='<div class="card"><div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #1e1e2a"><div style="font-size:18px;font-weight:800;color:var(--gold)">PRAGA Administracion de Consorcios</div><div style="font-size:14px;font-weight:600;margin-top:6px">Liquidacion — '+mL+'</div><div style="font-size:13px;color:var(--text3);margin-top:4px">'+cons.nombre+' · '+(cons.direccion||'')+'</div></div><div class="stat-grid" style="margin-bottom:20px"><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Ingresos</div><div class="stat-value" style="color:var(--green);font-size:18px">'+$m(tI)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Ordinarios</div><div class="stat-value" style="color:var(--blue);font-size:18px">'+$m(tO)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Extraordinarios</div><div class="stat-value" style="color:var(--red);font-size:18px">'+$m(tE)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Saldo</div><div class="stat-value" style="color:'+(saldo>=0?'var(--green)':'var(--red)')+';font-size:18px">'+$m(saldo)+'</div></div></div><div class="liq-section liq-ing"><div class="liq-t">Ingresos del periodo</div>'+(iH||'<div style="color:var(--text3);font-size:13px;padding:8px 12px">Sin ingresos</div>')+'<div class="liq-tot"><span>Total ingresos</span><span style="color:var(--green)">'+$m(tI)+'</span></div></div><div class="liq-section liq-ord"><div class="liq-t">Gastos ordinarios</div>'+(gOH||'<div style="color:var(--text3);font-size:13px;padding:8px 12px">Sin gastos</div>')+'<div class="liq-tot"><span>Total ordinarios</span><span style="color:var(--blue)">'+$m(tO)+'</span></div></div><div class="liq-section liq-ext"><div class="liq-t">Gastos extraordinarios</div>'+(gEH||'<div style="color:var(--text3);font-size:13px;padding:8px 12px">Sin gastos</div>')+'<div class="liq-tot"><span>Total extraordinarios</span><span style="color:var(--red)">'+$m(tE)+'</span></div></div><div style="background:var(--dark3);border-radius:var(--r);padding:16px;margin:16px 0"><div style="font-size:13px;font-weight:700;margin-bottom:12px">Estado por unidad</div><div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Tipo</th><th>Cuota</th><th>Pago mes</th><th>Deuda total</th><th></th></tr></thead><tbody>'+(dRows||'<tr><td colspan="6" style="text-align:center;color:var(--text3)">Sin propietarios</td></tr>')+'</tbody></table></div></div><div class="page-actions" style="margin-top:12px;margin-bottom:0"><button class="btn bg" onclick="window.print()"><i data-lucide="printer"></i> Imprimir</button></div></div>';
+}
+
+// ===== RECIBO DE EXPENSAS POR UNIDAD (diferenciado ordinarias/extraordinarias) =====
+function reciboUnidad(pid,cid,mes){
+  var p=C.propietarios.find(function(x){return x.id===pid;});if(!p)return;
+  cid=cid||p.consorcio_id;mes=mes||ma();
+  var cons=C.consorcios.find(function(x){return x.id===cid;});
+  var gM=C.gastos.filter(function(g){return g.consorcio_id===cid&&g.fecha&&g.fecha.slice(0,7)===mes;});
+  var tO=gM.filter(function(g){return g.tipo_gasto!=='extraordinario';}).reduce(function(s,g){return s+Number(g.monto);},0);
+  var tE=gM.filter(function(g){return g.tipo_gasto==='extraordinario';}).reduce(function(s,g){return s+Number(g.monto);},0);
+  var units=C.propietarios.filter(function(x){return x.consorcio_id===cid;});
+  var n=units.length||1;
+  var cuota=Number(p.cuota_fija)||60000;
+  var totalCoef=units.reduce(function(s,u){return s+(Number(u.coeficiente)||0);},0);
+  var share=totalCoef>0?(Number(p.coeficiente)||0)/totalCoef:1/n;
+  var modo=totalCoef>0?'por coeficiente':'partes iguales · '+n+' UF';
+  var ordGasto=Math.round(tO*share);        // parte de gastos ordinarios de la unidad
+  var ord=Math.min(ordGasto,cuota);           // a cargo del inquilino (tope: la cuota)
+  var reserva=cuota-ord;                       // sobrante de la cuota -> fondo de reserva (propietario)
+  var tot=cuota;                              // el total NO cambia: los extraordinarios salen del fondo, no generan deuda
+  var parts=mes.split('-');var mL=MN[parseInt(parts[1])-1]+' '+parts[0];
+  var unidad=p.piso_dpto||p.unidad||'-';
+  var rented=!!(p.alquilado&&p.inquilino);
+  var reparto=rented
+    ?'<div class="rcb-rep"><div class="rcb-rc inq"><div class="w">Inquilino</div><div class="nm">'+p.inquilino+'</div><div class="am">'+$m(ord)+'</div><div style="font-size:10px;color:var(--color-text-muted);margin-top:2px">Ordinarias</div></div><div class="rcb-rc prop"><div class="w">Propietario</div><div class="nm">'+p.nombre+'</div><div class="am">'+$m(reserva)+'</div><div style="font-size:10px;color:var(--color-text-muted);margin-top:2px">Reserva</div></div></div>'
+    :'<div class="al ai" style="margin:10px 0">Unidad ocupada por el propietario — abona la totalidad de la cuota.</div>';
+  var html='<div class="mt" style="margin-bottom:14px">Recibo de expensas <button class="btn bo bs" onclick="cm()"><i data-lucide="x"></i></button></div>'
+    +'<div class="rcb">'
+    +'<div class="rcb-top"><div class="rcb-brand">PRAGA<small>Administración de Consorcios</small></div><div class="rcb-doc"><div style="font-weight:600">Recibo de expensas</div><div class="p">Período '+mL+'</div></div></div>'
+    +'<div class="rcb-info"><div><div class="k">Consorcio</div><div class="v">'+(cons?cons.nombre:'-')+'</div></div><div><div class="k">Unidad</div><div class="v">'+unidad+'</div></div><div><div class="k">Propietario</div><div class="v">'+p.nombre+'</div></div><div><div class="k">Inquilino</div><div class="v">'+(rented?p.inquilino:'—')+'</div></div></div>'
+    +'<div class="rcb-sec"><div class="rcb-sh"><div class="tit"><span class="d" style="background:#93C5FD"></span>Gastos ordinarios</div><span class="rcb-who inq">A cargo del inquilino</span></div><div class="rcb-line"><span>Parte de gastos ordinarios ('+modo+')</span><span>'+$m(ord)+'</span></div><div class="rcb-sub"><span>Subtotal ordinarias</span><span>'+$m(ord)+'</span></div></div>'
+    +'<div class="rcb-sec"><div class="rcb-sh"><div class="tit"><span class="d" style="background:var(--gold)"></span>Fondo de reserva / extraordinarias</div><span class="rcb-who prop">A cargo del propietario</span></div><div class="rcb-line"><span>Aporte al fondo (sobrante de la cuota)</span><span>'+$m(reserva)+'</span></div><div class="rcb-sub"><span>Subtotal reserva</span><span>'+$m(reserva)+'</span></div></div>'
+    +'<div class="rcb-total"><span class="k">Total a pagar (unidad)</span><span class="v">'+$m(tot)+'</span></div>'
+    +reparto
+    +'<div class="rcb-note">Los gastos ordinarios (a cargo del inquilino) son lo consumido en el período; el sobrante de la cuota alimenta el fondo de reserva (a cargo del propietario). Los gastos extraordinarios se pagan con ese fondo y no generan cargos adicionales, salvo que el fondo no alcance. Reparto según contrato de locación (art. 1209 CCyC / lo pactado). Documento informativo emitido por la administración.</div>'
+    +'<div class="page-actions" style="margin-top:14px;margin-bottom:0"><button class="btn bo" onclick="cm()">Cerrar</button><button class="btn bg" onclick="window.print()"><i data-lucide="printer"></i> Imprimir</button></div>'
+    +'</div>';
+  om(html);
 }
 
 // ===== CARGA INICIAL GENOVA =====
