@@ -430,11 +430,26 @@ tr:hover td{background:rgba(255,255,255,.025)!important}
 .agenda-item .ag-meta{font-size:11px;color:var(--color-text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .agenda-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;border:1px solid transparent;white-space:nowrap;flex-shrink:0}
 .ag-acts{display:flex;gap:6px;flex-shrink:0}
+.cal-count{display:none}
 @media(max-width:768px){
   .cal-panel{padding:16px}
-  .cal-cell{min-height:60px;padding:6px;border-radius:10px;gap:2px}
-  .cal-ev{font-size:9px;padding:1px 4px}
   .cal-title{font-size:16px;flex:1 1 100%;order:-1}
+  /* ===== Mobile: "Mes con tinte" — solo número, tinte por tipo, contador ===== */
+  .cal-grid{gap:6px}
+  .cal-cell{aspect-ratio:1/1;min-height:0;padding:4px;border-radius:11px;align-items:center;justify-content:center;position:relative;gap:0}
+  .cal-cell .cal-ev,.cal-cell .cal-more{display:none}
+  .cal-daynum{font-size:14px;font-weight:600;color:var(--color-text-secondary);margin:0}
+  .cal-cell.has-ev .cal-daynum{color:var(--color-text-primary);font-weight:700}
+  .cal-cell.evt-tarea{background:rgba(59,130,246,.16)!important;border-color:rgba(59,130,246,.34)!important}
+  .cal-cell.evt-recordatorio{background:rgba(212,175,55,.16)!important;border-color:rgba(212,175,55,.34)!important}
+  .cal-cell.evt-reunion{background:rgba(168,85,247,.16)!important;border-color:rgba(168,85,247,.34)!important}
+  .cal-cell.evt-pago{background:rgba(239,68,68,.16)!important;border-color:rgba(239,68,68,.34)!important}
+  .cal-cell.evt-mantenimiento{background:rgba(16,185,129,.16)!important;border-color:rgba(16,185,129,.34)!important}
+  .cal-cell.evt-otro{background:rgba(148,163,184,.16)!important;border-color:rgba(148,163,184,.34)!important}
+  .cal-cell.today{background:var(--color-brand)!important;border-color:transparent!important}
+  .cal-cell.today .cal-daynum{color:#0a0800!important;font-weight:800}
+  .cal-count{display:block;position:absolute;top:3px;right:5px;font-size:9px;font-weight:800;color:var(--color-brand);line-height:1}
+  .cal-cell.today .cal-count{color:#0a0800}
   .agenda-badge{display:none}
 }
 
@@ -1410,8 +1425,9 @@ function pgCal(){
     var evs=eventosDelDia(fecha,dia);
     var chips=evs.slice(0,2).map(function(e){return '<div class="cal-ev '+(EVCLS[e.tipo]||EVCLS.otro)+'" title="'+(e.titulo||'').replace(/"/g,'&quot;')+'">'+(e.hora?e.hora+' ':'')+e.titulo+'</div>';}).join('');
     var more=evs.length>2?'<div class="cal-more">+'+(evs.length-2)+' más</div>':'';
-    var cls='cal-cell'+(esHoyMes&&dia===hoy.getDate()?' today':'');
-    celdas+='<div class="'+cls+'" onclick="abrirDia(\''+fecha+'\','+dia+')"><div class="cal-daynum">'+dia+'</div>'+chips+more+'</div>';
+    var cls='cal-cell'+(esHoyMes&&dia===hoy.getDate()?' today':'')+(evs.length?' has-ev evt-'+(evs[0].tipo||'otro'):'');
+    var count=evs.length>1?'<span class="cal-count">'+evs.length+'</span>':'';
+    celdas+='<div class="'+cls+'" onclick="abrirDia(\''+fecha+'\','+dia+')"><div class="cal-daynum">'+dia+'</div>'+chips+more+count+'</div>';
   }
   /* Agenda: misma fuente que el calendario (eventos + mantenimiento + recordatorios), agrupada por dia */
   var agDias=[];var agTotal=0;
