@@ -596,7 +596,6 @@ tr:hover td{background:rgba(255,255,255,.025)!important}
       <div class="ns">Comunicacion</div>
       <div class="ni" onclick="nav('mensajes')"><span class="ni-icon"><i data-lucide="mail"></i></span>Mensajes <span id="mb" style="display:none;background:var(--red);color:white;font-size:9px;padding:1px 6px;border-radius:10px;margin-left:auto">0</span></div>
       <div class="ni" onclick="nav('comunicaciones')"><span class="ni-icon"><i data-lucide="message-circle"></i></span>Comunicaciones</div>
-      <div class="ni" onclick="nav('clientes')"><span class="ni-icon"><i data-lucide="user-plus"></i></span>Nuevos Clientes</div>
       <div class="ni" onclick="nav('configuracion')"><span class="ni-icon"><i data-lucide="settings"></i></span>Configuracion</div>
       <div class="ns">Accesos</div>
       <div class="ni" onclick="nav('portal')"><span class="ni-icon"><i data-lucide="key-round"></i></span>Portal Propietarios</div>
@@ -858,7 +857,7 @@ function updMB(){
   if(nw&&nc){nw.style.display=n>0?'flex':'none';nc.textContent=n;}
 }
 
-var TITLES={dashboard:'Dashboard',caja:'Estado de Caja',cajaadmin:'Caja Administración',calendario:'Calendario',consorcios:'Consorcios',gastos:'Gastos',ingresos:'Ingresos',deudas:'Deudas',morosos:'Morosos',liquidacion:'Liquidacion',mantenimiento:'Mantenimiento',recordatorios:'Recordatorios',mensajes:'Mensajes',comunicaciones:'Comunicaciones',clientes:'Nuevos Clientes',configuracion:'Configuracion',portal:'Portal Propietarios'};
+var TITLES={dashboard:'Dashboard',caja:'Estado de Caja',cajaadmin:'Caja Administración',calendario:'Calendario',consorcios:'Consorcios',gastos:'Gastos',ingresos:'Ingresos',deudas:'Deudas',morosos:'Morosos',liquidacion:'Liquidacion',mantenimiento:'Mantenimiento',recordatorios:'Recordatorios',mensajes:'Mensajes',comunicaciones:'Comunicaciones',configuracion:'Configuracion',portal:'Portal Propietarios'};
 
 function nav(page,back){
   PP=back||null;
@@ -868,7 +867,7 @@ function nav(page,back){
   var sb=document.getElementById('sb'),ov=document.getElementById('overlay');
   if(sb)sb.classList.remove('open');
   if(ov)ov.classList.remove('open');
-  var pages={dashboard:pgD,caja:pgCaja,cajaadmin:pgCajaAdmin,calendario:pgCal,consorcios:pgC,gastos:pgG,ingresos:pgI,deudas:pgDeudas,morosos:pgM,liquidacion:pgL,mantenimiento:pgMt,recordatorios:pgR,mensajes:pgMsg,comunicaciones:pgComm,clientes:pgCli,configuracion:pgCfg,portal:pgPortal};
+  var pages={dashboard:pgD,caja:pgCaja,cajaadmin:pgCajaAdmin,calendario:pgCal,consorcios:pgC,gastos:pgG,ingresos:pgI,deudas:pgDeudas,morosos:pgM,liquidacion:pgL,mantenimiento:pgMt,recordatorios:pgR,mensajes:pgMsg,comunicaciones:pgComm,configuracion:pgCfg,portal:pgPortal};
   document.getElementById('ct').innerHTML=(pages[page]||pgD)();
   var mor=C.propietarios.filter(function(p){return calcDeudaProp(p.id).total>0;});
   var venc=C.recordatorios.filter(function(r){return r.activo&&r.dia===dom();});
@@ -1245,7 +1244,21 @@ function nEC(id,est,cid){var es=['pendiente','en_curso','finalizado','cancelado'
 function dMC(id,cid){if(!confirm('Eliminar?'))return;dd('mantenimiento',id).then(function(){C.mantenimiento=C.mantenimiento.filter(function(m){return m.id!==id;});document.getElementById('ct').innerHTML=rCD(cid,'mantenimiento');}).catch(function(){toast('Error');});}
 
 // ===== GASTOS =====
-function pgG(){var rows=C.gastos.map(function(g){var c=C.consorcios.find(function(x){return x.id===g.consorcio_id;});return '<tr><td class="p">'+g.descripcion+'</td><td>'+(c?c.nombre:'-')+'</td><td>'+(g.tipo_gasto==='extraordinario'?'<span class="tag-ext">Ext.</span>':'<span class="tag-ord">Ord.</span>')+'</td><td><span class="tag">'+(g.categoria||'-')+'</span></td><td style="color:var(--gold);font-weight:700">'+$m(g.monto)+'</td><td>'+(g.fecha||'-')+'</td><td>'+(g.proveedor||'-')+'</td><td><button class="btn bo bs" onclick="mEG(\''+g.id+'\')"><i data-lucide="pencil"></i></button> <button class="btn bd bs" onclick="dG(\''+g.id+'\')"><i data-lucide="x"></i></button></td></tr>';}).join('');return '<div class="page-actions"><button class="btn bg" onclick="mAG(null)">+ Nuevo gasto</button></div><div class="card">'+(C.gastos.length?'<div style="overflow-x:auto"><table><thead><tr><th>Descripcion</th><th>Consorcio</th><th>Tipo</th><th>Categoria</th><th>Monto</th><th>Fecha</th><th>Proveedor</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Sin gastos</div>')+'</div>';}
+function pgG(){
+  var hist=C.gastos.slice().sort(function(a,b){return (b.fecha||'')>(a.fecha||'')?1:-1;});
+  var totalGeneral=hist.reduce(function(s,g){return s+Number(g.monto);},0);
+  var porMes={};
+  hist.forEach(function(g){var mes=g.fecha?g.fecha.slice(0,7):'sin-fecha';if(!porMes[mes])porMes[mes]=[];porMes[mes].push(g);});
+  var contenido=Object.keys(porMes).sort(function(a,b){return b>a?1:-1;}).map(function(mes){
+    var items=porMes[mes];
+    var total=items.reduce(function(s,g){return s+Number(g.monto);},0);
+    var tOrd=items.filter(function(g){return g.tipo_gasto!=='extraordinario';}).reduce(function(s,g){return s+Number(g.monto);},0);
+    var tExt=total-tOrd;
+    var rows=items.map(function(g){var c=C.consorcios.find(function(x){return x.id===g.consorcio_id;});return '<tr><td class="p">'+g.descripcion+'</td><td>'+(c?c.nombre:'-')+'</td><td>'+(g.tipo_gasto==='extraordinario'?'<span class="tag-ext">Ext.</span>':'<span class="tag-ord">Ord.</span>')+'</td><td><span class="tag">'+(g.categoria||'-')+'</span></td><td style="color:var(--gold);font-weight:700">'+$m(g.monto)+'</td><td>'+(g.fecha||'-')+'</td><td>'+(g.proveedor||'-')+'</td><td><button class="btn bo bs" onclick="mEG(\''+g.id+'\')"><i data-lucide="pencil"></i></button> <button class="btn bd bs" onclick="dG(\''+g.id+'\')"><i data-lucide="x"></i></button></td></tr>';}).join('');
+    return '<div class="card" style="margin-bottom:14px"><div class="card-head"><div><div class="card-title">'+mLabel(mes)+'</div><div class="card-sub">'+items.length+' gasto(s) · Ord. '+$m(tOrd)+' · Ext. '+$m(tExt)+'</div></div><div style="font-size:18px;font-weight:800;color:var(--orange)">'+$m(total)+'</div></div><div style="overflow-x:auto"><table><thead><tr><th>Descripcion</th><th>Consorcio</th><th>Tipo</th><th>Categoria</th><th>Monto</th><th>Fecha</th><th>Proveedor</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  }).join('');
+  return '<div class="stat-grid" style="margin-bottom:20px"><div class="stat-card"><div><div class="stat-label">Total gastos</div><div class="stat-value" style="color:var(--orange)">'+$m(totalGeneral)+'</div></div><div class="stat-icon" style="background:var(--orange-dim);color:var(--orange)"><i data-lucide="receipt-text"></i></div></div><div class="stat-card"><div><div class="stat-label">Registrados</div><div class="stat-value" style="color:var(--gold)">'+hist.length+'</div></div><div class="stat-icon" style="background:var(--gold-dim);color:var(--gold)"><i data-lucide="file-text"></i></div></div></div><div class="page-actions"><button class="btn bg" onclick="mAG(null)">+ Nuevo gasto</button></div>'+(contenido||'<div class="empty">Sin gastos registrados</div>');
+}
 function mEG(id){var g=C.gastos.find(function(x){return x.id===id;});var opts=C.consorcios.map(function(c){return '<option value="'+c.id+'"'+(c.id===g.consorcio_id?' selected':'')+'>'+c.nombre+'</option>';}).join('');om('<div class="mt">Editar Gasto <button class="btn bo bs" onclick="cm()"><i data-lucide="x"></i></button></div><div class="fr"><div class="fg"><label>Descripcion</label><input id="gd" value="'+g.descripcion+'"></div><div class="fg"><label>Consorcio</label><select id="gc">'+opts+'</select></div></div><div class="fr"><div class="fg"><label>Monto ($)</label><input id="gm" type="number" value="'+g.monto+'"></div><div class="fg"><label>Fecha</label><input id="gf" type="date" value="'+(g.fecha||'')+'"></div></div><div class="fr"><div class="fg"><label>Tipo</label><select id="gt"><option value="ordinario"'+(g.tipo_gasto!=='extraordinario'?' selected':'')+'>Ordinario</option><option value="extraordinario"'+(g.tipo_gasto==='extraordinario'?' selected':'')+'>Extraordinario</option></select></div><div class="fg"><label>Categoria</label><select id="gcat"><option>Electricidad</option><option>Limpieza</option><option>Mantenimiento</option><option>Ascensor</option><option>Seguro</option><option>Agua</option><option>Gas</option><option>Administracion</option><option>Reparacion</option><option>Fondo de reserva</option><option>Otro</option></select></div></div><div class="fg" style="margin-bottom:16px"><label>Proveedor</label><input id="gprov" value="'+(g.proveedor||'')+'"></div><button class="btn bg" onclick="uG(\''+id+'\')" style="width:100%;margin-top:8px">Guardar</button>');}
 function uG(id){var o={descripcion:document.getElementById('gd').value.trim(),consorcio_id:document.getElementById('gc').value,monto:parseFloat(document.getElementById('gm').value),fecha:document.getElementById('gf').value,tipo_gasto:document.getElementById('gt').value,categoria:document.getElementById('gcat').value,proveedor:document.getElementById('gprov').value};dpa('gastos',id,o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});var g=C.gastos.find(function(x){return x.id===id;});if(g)Object.assign(g,o);cm();nav('gastos');toast('Actualizado');}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
 function dG(id){if(!confirm('Eliminar?'))return;dd('gastos',id).then(function(){C.gastos=C.gastos.filter(function(g){return g.id!==id;});nav('gastos');}).catch(function(){toast('Error');});}
