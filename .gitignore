@@ -1,0 +1,6 @@
+# Archivos de trabajo locales (no forman parte de la app publicada)
+.claude/
+preview-rediseno.html
+styleguide.html
+index.backup-*.html
+praga/
