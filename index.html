@@ -252,7 +252,7 @@ td.p{color:var(--text);font-weight:600}
 
 /* ====== VIDEO DE FONDO — atmósfera controlada ====== */
 /* Video global: leve desaturación premium. En login mantiene presencia. */
-#bgv{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;background:var(--color-bg);filter:saturate(.92) brightness(.96)}
+#bgv{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;background:radial-gradient(ellipse at 50% 18%,#1a160c 0%,#0d0e13 45%,#08090d 100%);filter:saturate(.92) brightness(.96)}
 /* Overlay del login: oscuro pero deja ver el video (premium, de marca) */
 #bgdim{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(8,10,14,.46) 0%,rgba(8,10,14,.64) 100%);pointer-events:none}
 /* Pantallas internas: la app sólo se muestra logueado → atmósfera fuerte,
@@ -525,7 +525,7 @@ tr:hover td{background:rgba(255,255,255,.025)!important}
 </style>
 </head>
 <body>
-<video id="bgv" autoplay loop muted playsinline poster="praga.jpg">
+<video id="bgv" autoplay loop muted playsinline webkit-playsinline="true" preload="auto">
   <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260403_050628_c4e32401-fab4-4a27-b7a8-6e9291cd5959.mp4" type="video/mp4">
 </video>
 <div id="bgdim"></div>
@@ -542,6 +542,14 @@ tr:hover td{background:rgba(255,255,255,.025)!important}
   v.addEventListener('canplay',ensurePlay);
   v.addEventListener('play',setRate);
   v.addEventListener('ratechange',function(){if(v.playbackRate!==RATE)setRate();});
+  /* Safari/iOS: si el autoplay está bloqueado (Modo Bajo Consumo o ahorro de datos),
+     arrancamos el video con el primer gesto del usuario (siempre permitido). */
+  var kick=function(){setRate();ensurePlay();};
+  ['touchstart','pointerdown','click','keydown'].forEach(function(ev){
+    document.addEventListener(ev,kick,{passive:true});
+  });
+  /* Reintentar cuando la pestaña/app vuelve a estar visible */
+  document.addEventListener('visibilitychange',function(){if(!document.hidden){setRate();ensurePlay();}});
 })();
 </script>
 
