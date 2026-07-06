@@ -869,6 +869,7 @@ var TITLES={dashboard:'Dashboard',caja:'Estado de Caja',cajaadmin:'Caja Administ
 
 function nav(page,back){
   PP=back||null;
+  if(page==='dashboard')DASH_MES='';
   document.querySelectorAll('.ni').forEach(function(n){n.classList.toggle('active',n.getAttribute('onclick')==="nav('"+page+"')");});
   document.getElementById('pt').textContent=TITLES[page]||page;
   document.getElementById('bw').style.display=back?'inline':'none';
@@ -945,7 +946,7 @@ function pgD(){
   var td2=mor.reduce(function(s,p){return s+calcDeudaProp(p.id).total;},0);
   var msgsN=C.mensajes.filter(function(m){return !m.leido&&m.de&&m.de.indexOf('prop_')===0;}).length;
   var urg=(cid?C.mantenimiento.filter(function(m){return m.consorcio_id===cid;}):C.mantenimiento).filter(function(m){return m.prioridad==='alta'&&m.estado!=='finalizado';});
-  var mesSel=DASH_MES||gastosC.reduce(function(mx,g){var m=(g.fecha||'').slice(0,7);return m>mx?m:mx;},'')||ingresosC.reduce(function(mx,i){var m=(i.fecha||'').slice(0,7);return m>mx?m:mx;},'')||ma();
+  var mesSel=DASH_MES||ma();
   var ingMes=ingresosC.filter(function(i){return i.fecha&&i.fecha.slice(0,7)===mesSel&&Number(i.monto)>0&&i.pagado_por!=='Sistema';}).reduce(function(s,i){return s+Number(i.monto);},0);
   var gasMes=gastosC.filter(function(g){return g.fecha&&g.fecha.slice(0,7)===mesSel;}).reduce(function(s,g){return s+Number(g.monto);},0);
   var mp=mesSel.split('-');var mesLbl=MN[parseInt(mp[1])-1]+' '+mp[0];
