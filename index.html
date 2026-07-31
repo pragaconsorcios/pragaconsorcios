@@ -760,8 +760,27 @@ function sf(path,opts){
     return null;
   });
 }
-function dp(t,o){return fetch(SU+'/rest/v1/'+t,{method:'POST',headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(o)});}
-function dpa(t,id,o){return fetch(SU+'/rest/v1/'+t+'?id=eq.'+id,{method:'PATCH',headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'},body:JSON.stringify(o)});}
+// Envia POST/PATCH y, si el backend rechaza una columna inexistente (PGRST204),
+// la quita del payload y reintenta. Evita que un solo campo faltante (ej: cuota_fija)
+// haga fallar todo el guardado del propietario/gasto/etc.
+function _send(url,method,o,extraHeaders){
+  var h={'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
+  if(extraHeaders)for(var k in extraHeaders)h[k]=extraHeaders[k];
+  return fetch(url,{method:method,headers:h,body:JSON.stringify(o)}).then(function(r){
+    if(r.ok||!o)return r;
+    return r.clone().text().then(function(txt){
+      var m=txt.match(/Could not find the '([^']+)' column/);
+      if(m&&Object.prototype.hasOwnProperty.call(o,m[1])){
+        var copy=Object.assign({},o);delete copy[m[1]];
+        console.warn("Columna inexistente '"+m[1]+"': reintentando sin ella. Agregala en Supabase para persistirla.");
+        return _send(url,method,copy,extraHeaders);
+      }
+      return r;
+    });
+  });
+}
+function dp(t,o){return _send(SU+'/rest/v1/'+t,'POST',o,{'Prefer':'return=minimal'});}
+function dpa(t,id,o){return _send(SU+'/rest/v1/'+t+'?id=eq.'+id,'PATCH',o);}
 function dd(t,id){return fetch(SU+'/rest/v1/'+t+'?id=eq.'+id,{method:'DELETE',headers:{'apikey':SK,'Authorization':'Bearer '+SK}});}
 function ddw(t,f,v){return fetch(SU+'/rest/v1/'+t+'?'+f+'=eq.'+v,{method:'DELETE',headers:{'apikey':SK,'Authorization':'Bearer '+SK}});}
 
@@ -790,6 +809,20 @@ function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style
 function om(h){document.getElementById('mi').innerHTML=h;document.getElementById('modal').style.display='flex';}
 function cmo(e){if(e&&e.target!==document.getElementById('modal'))return;document.getElementById('modal').style.display='none';}
 function cm(){document.getElementById('modal').style.display='none';}
+// Anti doble-submit: en fase de captura (corre antes del onclick inline) bloquea
+// los clics repetidos en el boton de accion (.bg) del modal, para que taps
+// dobles/triples no creen gastos/ingresos/pagos duplicados. Se re-habilita a los 4s.
+(function(){
+  var modal=document.getElementById('modal');
+  if(!modal)return;
+  modal.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('button.bg');
+    if(!b)return;
+    if(b._locked){e.stopImmediatePropagation();e.preventDefault();return;}
+    b._locked=true;b.style.opacity='.55';
+    setTimeout(function(){b._locked=false;b.style.opacity='';},4000);
+  },true);
+})();
 
 function sp2(ps){
   return ps.slice().sort(function(a,b){
