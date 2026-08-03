@@ -1,0 +1,10 @@
+# Config de Supabase para el proyecto pragaconsorcios.
+project_id = "ylsakdugmhsddapodlfs"
+
+# Las funciones se llaman desde el navegador del propietario (crear-pago)
+# y desde los servidores de AstroPay (callback-astropay): sin JWT de Supabase.
+[functions.crear-pago]
+verify_jwt = false
+
+[functions.callback-astropay]
+verify_jwt = false

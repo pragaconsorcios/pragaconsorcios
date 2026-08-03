@@ -636,6 +636,7 @@ tr:hover td{background:rgba(255,255,255,.025)!important}
       <div class="ni" onclick="nav('consorcios')"><span class="ni-icon"><i data-lucide="building-2"></i></span>Consorcios</div>
       <div class="ni" onclick="nav('gastos')"><span class="ni-icon"><i data-lucide="receipt-text"></i></span>Gastos</div>
       <div class="ni" onclick="nav('ingresos')"><span class="ni-icon"><i data-lucide="circle-dollar-sign"></i></span>Ingresos</div>
+      <div class="ni" onclick="nav('pagosconf')"><span class="ni-icon"><i data-lucide="badge-check"></i></span>Pagos por confirmar <span id="pcb" style="display:none;background:var(--gold);color:#1a1a1a;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;margin-left:auto">0</span></div>
       <div class="ni" onclick="nav('deudas')"><span class="ni-icon"><i data-lucide="file-warning"></i></span>Deudas</div>
       <div class="ni" onclick="nav('morosos')"><span class="ni-icon"><i data-lucide="triangle-alert"></i></span>Morosos</div>
       <div class="ni" onclick="nav('liquidacion')"><span class="ni-icon"><i data-lucide="file-check"></i></span>Liquidacion</div>
@@ -680,10 +681,15 @@ tr:hover td{background:rgba(255,255,255,.025)!important}
 <script>
 var SU='https://ylsakdugmhsddapodlfs.supabase.co';
 var SK='sb_publishable_q1b1d0XL5KZqH4SXSWrgFQ_FWvt6yQB';
+var FN='https://ylsakdugmhsddapodlfs.functions.supabase.co'; // Edge Functions (pagos online)
 var AD={juanchi:'juanchi98',facu:'facu98'};
 var CU=null,PP=null,CID=null;
-var C={consorcios:[],propietarios:[],gastos:[],ingresos:[],mantenimiento:[],recordatorios:[],comunicaciones:[],clientes:[],mensajes:[],eventos:[],liquidaciones:[],caja_admin:[]};
+var C={consorcios:[],propietarios:[],gastos:[],ingresos:[],mantenimiento:[],recordatorios:[],comunicaciones:[],clientes:[],mensajes:[],eventos:[],liquidaciones:[],caja_admin:[],pagos:[]};
 var CFG={on:true,tasa:10,dia:10};
+// Config de pagos (destino AstroPay) — se guarda en la tabla config_pagos (fila id=1)
+// para que el propietario la vea en su celular. La edita el admin en Configuracion.
+var PCFG={alias:'',titular:'',cbu:'',qr_url:'',instrucciones:'',activo:true};
+function loadPCFG(){return sf('config_pagos?id=eq.1&select=*').then(function(rows){if(rows&&rows[0])PCFG=Object.assign(PCFG,rows[0]);}).catch(function(){});}
 var MN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 var COLORES=['#C9A84C','#5DA98C','#6E8FBC','#CE6E77','#C8945F','#9B8BC4'];
 
@@ -737,7 +743,9 @@ function doLoginP(){
         sf('gastos?order=created_at.desc').then(function(d){C.gastos=d||[];}),
         sf('ingresos?order=created_at.desc').then(function(d){C.ingresos=d||[];}),
         sf('comunicaciones?order=created_at.desc').then(function(d){C.comunicaciones=d||[];}),
-        sf('mensajes?order=created_at.desc').then(function(d){C.mensajes=d||[];})
+        sf('mensajes?order=created_at.desc').then(function(d){C.mensajes=d||[];}),
+        loadPCFG(),
+        sf('pagos?propietario_id=eq.'+prop.id+'&order=created_at.desc').then(function(d){C.pagos=d||[];}).catch(function(){C.pagos=[];})
       ]).then(function(){showPropPortal(prop.id);});
     } else {
       e.style.display='block';
@@ -791,6 +799,7 @@ function initDB(){
     tabs.forEach(function(t,i){C[t]=res[i]||[];});
     document.getElementById('dbs').className='pill pg';
     document.getElementById('dbs').textContent='Conectado';
+    loadPCFG();
     updMB();
     nav('dashboard');
   }).catch(function(e){
@@ -938,7 +947,7 @@ function updMB(){
   if(nw&&nc){nw.style.display=n>0?'flex':'none';nc.textContent=n;}
 }
 
-var TITLES={dashboard:'Dashboard',caja:'Estado de Caja',cajaadmin:'Caja Administración',calendario:'Calendario',consorcios:'Consorcios',gastos:'Gastos',ingresos:'Ingresos',deudas:'Deudas',morosos:'Morosos',liquidacion:'Liquidacion',mantenimiento:'Mantenimiento',recordatorios:'Recordatorios',mensajes:'Mensajes',comunicaciones:'Comunicaciones',configuracion:'Configuracion',portal:'Portal Propietarios'};
+var TITLES={dashboard:'Dashboard',caja:'Estado de Caja',cajaadmin:'Caja Administración',calendario:'Calendario',consorcios:'Consorcios',gastos:'Gastos',ingresos:'Ingresos',pagosconf:'Pagos por confirmar',deudas:'Deudas',morosos:'Morosos',liquidacion:'Liquidacion',mantenimiento:'Mantenimiento',recordatorios:'Recordatorios',mensajes:'Mensajes',comunicaciones:'Comunicaciones',configuracion:'Configuracion',portal:'Portal Propietarios'};
 
 function nav(page,back){
   PP=back||null;
@@ -949,8 +958,9 @@ function nav(page,back){
   var sb=document.getElementById('sb'),ov=document.getElementById('overlay');
   if(sb)sb.classList.remove('open');
   if(ov)ov.classList.remove('open');
-  var pages={dashboard:pgD,caja:pgCaja,cajaadmin:pgCajaAdmin,calendario:pgCal,consorcios:pgC,gastos:pgG,ingresos:pgI,deudas:pgDeudas,morosos:pgM,liquidacion:pgL,mantenimiento:pgMt,recordatorios:pgR,mensajes:pgMsg,comunicaciones:pgComm,configuracion:pgCfg,portal:pgPortal};
+  var pages={dashboard:pgD,caja:pgCaja,cajaadmin:pgCajaAdmin,calendario:pgCal,consorcios:pgC,gastos:pgG,ingresos:pgI,pagosconf:pgPagosConf,deudas:pgDeudas,morosos:pgM,liquidacion:pgL,mantenimiento:pgMt,recordatorios:pgR,mensajes:pgMsg,comunicaciones:pgComm,configuracion:pgCfg,portal:pgPortal};
   document.getElementById('ct').innerHTML=(pages[page]||pgD)();
+  updPagosBadge();
   var mor=C.propietarios.filter(function(p){return calcDeudaProp(p.id).total>0;});
   var venc=C.recordatorios.filter(function(r){return r.activo&&r.dia===dom();});
   var msg='';
@@ -1826,6 +1836,16 @@ function pgCfg(){
   return '<div class="card"><div class="card-title" style="margin-bottom:20px">Configuracion general</div>'
     +'<div style="border-bottom:1px solid #1e1e2a;padding-bottom:20px;margin-bottom:20px"><div style="font-size:13px;font-weight:600;margin-bottom:14px">Intereses por mora</div><div class="fr"><div class="fg"><label>Aplicar intereses</label><select id="cfg-on" onchange="tCI()"><option value="1"'+(CFG.on?' selected':'')+'>Si</option><option value="0"'+(!CFG.on?' selected':'')+'>No</option></select></div><div class="fg" id="cfg-tw" style="'+(CFG.on?'':'opacity:.4;pointer-events:none')+'"><label>Tasa (%)</label><input id="cfg-t" type="number" step="0.1" value="'+CFG.tasa+'"></div><div class="fg" id="cfg-dw" style="'+(CFG.on?'':'opacity:.4;pointer-events:none')+'"><label>Desde el dia</label><input id="cfg-d" type="number" value="'+CFG.dia+'" min="1" max="31"></div></div><div class="al '+(CFG.on?'aw':'as')+'" style="margin-bottom:0">'+(CFG.on?'Se aplica '+CFG.tasa+'% desde el dia '+CFG.dia+'.':'Intereses desactivados.')+'</div></div>'
     +'<button class="btn bg" onclick="sCfg()" style="margin-bottom:28px">Guardar configuracion</button>'
+    +'<div style="border-top:1px solid #1e1e2a;padding-top:20px;margin-bottom:28px">'
+      +'<div style="font-size:13px;font-weight:700;margin-bottom:4px">Pagos online (AstroPay)</div>'
+      +'<div style="font-size:12px;color:var(--text3);margin-bottom:16px">Estos datos los ve el propietario al tocar “Pagar expensas”. La plata cae directo en tu cuenta AstroPay, sin comisión.</div>'
+      +'<div class="fr"><div class="fg"><label>Alias AstroPay</label><input id="pc-alias" value="'+escH(PCFG.alias)+'" placeholder="praga.expensas"></div><div class="fg"><label>Titular de la cuenta</label><input id="pc-tit" value="'+escH(PCFG.titular)+'" placeholder="Praga Consorcios"></div></div>'
+      +'<div class="fg" style="margin-bottom:12px"><label>CBU / CVU (opcional)</label><input id="pc-cbu" value="'+escH(PCFG.cbu)+'" placeholder="Ej: 0000003100010000000001"></div>'
+      +'<div class="fg" style="margin-bottom:12px"><label>Instrucciones para el propietario (opcional)</label><textarea id="pc-instr" rows="2" placeholder="Ej: Poné tu unidad como referencia.">'+escH(PCFG.instrucciones)+'</textarea></div>'
+      +'<div class="fg" style="margin-bottom:12px"><label>QR de cobro — imagen (opcional)</label><input type="file" accept="image/*" id="pc-qrfile" onchange="pcQrFile(this)"><div style="font-size:11px;color:var(--text3);margin-top:4px">Sacá el QR de “Cobrar/Recibir” en tu app AstroPay y subilo acá.</div><div id="pc-qrprev" style="margin-top:10px">'+(PCFG.qr_url?'<img src="'+PCFG.qr_url+'" style="max-width:140px;border-radius:10px;background:#fff;padding:6px">':'')+'</div></div>'
+      +'<div class="fg" style="margin-bottom:16px"><label>Habilitar pago online</label><select id="pc-on"><option value="1"'+(PCFG.activo!==false?' selected':'')+'>Si</option><option value="0"'+(PCFG.activo===false?' selected':'')+'>No</option></select></div>'
+      +'<button class="btn bg" onclick="sPCFG()">Guardar datos de pago</button>'
+    +'</div>'
     +'<div style="border-top:1px solid #1e1e2a;padding-top:20px"><div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px">⚠ Zona peligrosa</div><div style="font-size:12px;color:var(--text3);margin-bottom:14px">Estas acciones son irreversibles.</div><div style="display:flex;flex-wrap:wrap;gap:10px"><button class="btn bd" onclick="borrarTodo(\'ingresos\')"><i data-lucide="trash-2"></i> Borrar todos los ingresos</button><button class="btn bd" onclick="borrarTodo(\'gastos\')"><i data-lucide="trash-2"></i> Borrar todos los gastos</button></div></div></div>';
 }
 function tCI(){var on=document.getElementById('cfg-on').value==='1';document.getElementById('cfg-tw').style.opacity=on?'1':'0.4';document.getElementById('cfg-tw').style.pointerEvents=on?'auto':'none';document.getElementById('cfg-dw').style.opacity=on?'1':'0.4';document.getElementById('cfg-dw').style.pointerEvents=on?'auto':'none';}
@@ -1858,6 +1878,9 @@ function showPropPortal(pid){
   var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});
   var d=calcDeudaProp(pid);
   var pagos=C.ingresos.filter(function(i){return i.propietario_id===pid&&Number(i.monto)>0&&i.pagado_por!=='Sistema';});
+  var pend=(C.pagos||[]).filter(function(x){return x.propietario_id===pid&&x.estado==='pendiente';});
+  var pendTot=pend.reduce(function(s,x){return s+Number(x.monto||0);},0);
+  var pendH=pend.length?'<div class="al ai" style="margin-top:16px;margin-bottom:0"><b>Pago en revisión:</b> registramos '+$m(pendTot)+'. Se acreditará cuando la administración lo confirme.</div>':'';
   var msgs=C.mensajes.filter(function(m){return m.para_prop_id===pid;});
   var comms=C.comunicaciones.filter(function(x){return !x.consorcio_id||x.consorcio_id===p.consorcio_id;}).slice(0,5);
   document.getElementById('sb').style.display='none';
@@ -1869,9 +1892,215 @@ function showPropPortal(pid){
   var pH=pagos.map(function(i){return '<tr><td class="p">'+$m(i.monto)+'</td><td>'+(i.fecha||'-')+'</td><td>'+(i.concepto||'Expensa')+'</td><td>'+(i.comprobante||'-')+'</td></tr>';}).join('');
   var mH=msgs.map(function(m){return '<div style="padding:12px 0;border-bottom:1px solid #181820">'+((!m.leido)?'<span class="pill pb" style="margin-bottom:6px;display:inline-flex">Nuevo</span><br>':'')+'<div style="font-size:13px;font-weight:600">'+m.asunto+'</div><div style="font-size:13px;color:var(--text2);margin-top:4px">'+m.cuerpo+'</div></div>';}).join('');
   var cH=comms.map(function(x){return '<div style="padding:12px 0;border-bottom:1px solid #181820"><div style="font-size:13px;font-weight:600">'+x.titulo+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.6">'+x.cuerpo+'</div></div>';}).join('');
-  document.getElementById('ct').innerHTML='<div style="max-width:720px;margin:0 auto"><div class="card"><div style="display:flex;align-items:center;gap:16px;margin-bottom:20px"><div class="av" style="width:52px;height:52px;font-size:18px">'+p.nombre.slice(0,2).toUpperCase()+'</div><div><div style="font-size:17px;font-weight:700">'+p.nombre+'</div><div style="font-size:12px;color:var(--text3);margin-top:3px">'+(c?c.nombre:'-')+' · '+(p.piso_dpto||p.unidad||'-')+'</div></div></div><div class="stat-grid"><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Saldo</div><div class="stat-value" style="color:'+(d.saldo>0?'var(--orange)':'var(--green)')+'">'+$m(d.saldo)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Interes mora</div><div class="stat-value" style="color:'+(d.intereses>0?'var(--red)':'var(--text3)')+'">'+$m(d.intereses)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Total deuda</div><div class="stat-value" style="color:'+(d.total>0?'var(--red)':'var(--green)')+'">'+$m(d.total)+'</div></div></div>'+(d.total>0?'<div class="al aw" style="margin-top:16px;margin-bottom:0">Tenes deuda pendiente.</div>':'<div class="al as" style="margin-top:16px;margin-bottom:0">Estas al dia. ✓</div>')+'</div><div class="card"><div class="card-title" style="margin-bottom:14px">Mis mensajes</div>'+(msgs.length?mH:'<div class="empty">Sin mensajes</div>')+'<hr style="border-color:#1e1e2a;margin:16px 0"><div style="font-size:13px;font-weight:600;margin-bottom:12px">Enviar mensaje</div><div class="fg" style="margin-bottom:10px"><label>Asunto</label><input id="msg-asunto" placeholder="Consulta o comentario"></div><div class="fg" style="margin-bottom:12px"><label>Mensaje</label><textarea id="msg-cuerpo" rows="3"></textarea></div><button class="btn bg" onclick="eMsgP(\''+pid+'\')">Enviar</button></div><div class="card"><div class="card-title" style="margin-bottom:14px">Historial de pagos</div>'+(pagos.length?'<table><thead><tr><th>Monto</th><th>Fecha</th><th>Concepto</th><th>Comprobante</th></tr></thead><tbody>'+pH+'</tbody></table>':'<div class="empty">Sin pagos</div>')+'</div><div class="card"><div class="card-title" style="margin-bottom:14px">Comunicaciones</div>'+(comms.length?cH:'<div class="empty">Sin comunicaciones</div>')+'</div><div style="text-align:center;margin-top:20px"><button class="btn bo" onclick="logout()">Cerrar sesion</button></div></div>';
+  document.getElementById('ct').innerHTML='<div style="max-width:720px;margin:0 auto"><div class="card"><div style="display:flex;align-items:center;gap:16px;margin-bottom:20px"><div class="av" style="width:52px;height:52px;font-size:18px">'+p.nombre.slice(0,2).toUpperCase()+'</div><div><div style="font-size:17px;font-weight:700">'+p.nombre+'</div><div style="font-size:12px;color:var(--text3);margin-top:3px">'+(c?c.nombre:'-')+' · '+(p.piso_dpto||p.unidad||'-')+'</div></div></div><div class="stat-grid"><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Saldo</div><div class="stat-value" style="color:'+(d.saldo>0?'var(--orange)':'var(--green)')+'">'+$m(d.saldo)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Interes mora</div><div class="stat-value" style="color:'+(d.intereses>0?'var(--red)':'var(--text3)')+'">'+$m(d.intereses)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:14px;border:1px solid #1e1e2a"><div class="stat-label">Total deuda</div><div class="stat-value" style="color:'+(d.total>0?'var(--red)':'var(--green)')+'">'+$m(d.total)+'</div></div></div>'+(d.total>0?'<div class="al aw" style="margin-top:16px;margin-bottom:14px">Tenes deuda pendiente.</div><button class="btn bg" style="width:100%" onclick="mPagoOnline(\''+pid+'\','+d.total+')"><i data-lucide="credit-card"></i> Pagar expensas online</button>'+pendH:'<div class="al as" style="margin-top:16px;margin-bottom:0">Estas al dia. ✓</div>'+pendH)+'</div><div class="card"><div class="card-title" style="margin-bottom:14px">Mis mensajes</div>'+(msgs.length?mH:'<div class="empty">Sin mensajes</div>')+'<hr style="border-color:#1e1e2a;margin:16px 0"><div style="font-size:13px;font-weight:600;margin-bottom:12px">Enviar mensaje</div><div class="fg" style="margin-bottom:10px"><label>Asunto</label><input id="msg-asunto" placeholder="Consulta o comentario"></div><div class="fg" style="margin-bottom:12px"><label>Mensaje</label><textarea id="msg-cuerpo" rows="3"></textarea></div><button class="btn bg" onclick="eMsgP(\''+pid+'\')">Enviar</button></div><div class="card"><div class="card-title" style="margin-bottom:14px">Historial de pagos</div>'+(pagos.length?'<table><thead><tr><th>Monto</th><th>Fecha</th><th>Concepto</th><th>Comprobante</th></tr></thead><tbody>'+pH+'</tbody></table>':'<div class="empty">Sin pagos</div>')+'</div><div class="card"><div class="card-title" style="margin-bottom:14px">Comunicaciones</div>'+(comms.length?cH:'<div class="empty">Sin comunicaciones</div>')+'</div><div style="text-align:center;margin-top:20px"><button class="btn bo" onclick="logout()">Cerrar sesion</button></div></div>';
 }
 function eMsgP(pid){var asunto=document.getElementById('msg-asunto').value.trim();var cuerpo=document.getElementById('msg-cuerpo').value.trim();if(!asunto||!cuerpo)return toast('Completa asunto y mensaje');var o={id:uid(),de:'prop_'+pid,de_nombre:CU.nombre,para_prop_id:null,asunto:asunto,cuerpo:cuerpo,leido:false};dp('mensajes',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});toast('Mensaje enviado');document.getElementById('msg-asunto').value='';document.getElementById('msg-cuerpo').value='';}).catch(function(e){toast('Error: '+e.message.slice(0,80));});}
+
+// ===== Pago de expensas — transferencia/QR directo a AstroPay =====
+// El propietario transfiere/escanea a la cuenta AstroPay de la administracion
+// (directo, sin comision). Marca "Ya pague" -> queda un pago PENDIENTE que el
+// admin confirma con 1 clic (crea el ingreso y baja la deuda sola).
+// Desglosa la deuda por periodo para que el propietario elija que cuota pagar.
+function desgloseDeuda(pid){
+  var prop=C.propietarios.find(function(x){return x.id===pid;});
+  var out={items:[],anterior:0};
+  if(!prop)return out;
+  var regs=C.ingresos.filter(function(i){return i.propietario_id===pid;});
+  var deudaAnt=0,cuotasEmit=0;
+  var mesesConPago={},mesesEmitidos={};
+  regs.forEach(function(i){
+    var con=(i.concepto||'').trim();
+    if(con.indexOf('SALDO_ANTERIOR:')===0){var v=parseFloat(con.replace('SALDO_ANTERIOR:','').trim());if(!isNaN(v)&&v>0)deudaAnt+=v;}
+    else if(con.indexOf('CUOTA_EMITIDA:')===0){var v2=parseFloat(con.replace('CUOTA_EMITIDA:','').trim());if(!isNaN(v2)&&v2>0)cuotasEmit+=v2;if(i.fecha)mesesEmitidos[i.fecha.slice(0,7)]=true;}
+    else if(Number(i.monto)>0&&i.pagado_por!=='Sistema'&&i.fecha){var mes=i.fecha.slice(0,7);mesesConPago[mes]=(mesesConPago[mes]||0)+Number(i.monto);}
+  });
+  var cuota=Number(prop.cuota_fija)||60000;
+  var hoy=new Date();var anioH=hoy.getFullYear(),mesH=hoy.getMonth()+1;
+  var claves=[];
+  if(cuotasEmit>0){
+    var ce=Object.keys(mesesEmitidos).sort();
+    ce.forEach(function(k){claves.push(k);});
+    if(ce.length){var u=ce[ce.length-1].split('-');var aC=parseInt(u[0]),mC=parseInt(u[1])+1;if(mC>12){mC=1;aC++;}
+      while(aC<anioH||(aC===anioH&&mC<=mesH)){var act=(aC===anioH&&mC===mesH);if(!act||hoy.getDate()>=CFG.dia)claves.push(aC+'-'+String(mC).padStart(2,'0'));mC++;if(mC>12){mC=1;aC++;}}}
+  } else {
+    var pr=regs.filter(function(i){return Number(i.monto)>0&&i.pagado_por!=='Sistema'&&i.fecha;}).sort(function(a,b){return a.fecha>b.fecha?1:-1;});
+    var aD,mD;if(pr.length){var up=pr[pr.length-1].fecha.split('-');aD=parseInt(up[0]);mD=parseInt(up[1])+1;if(mD>12){mD=1;aD++;}}else{aD=anioH;mD=mesH;}
+    var aa=aD,mmk=mD;while(aa<anioH||(aa===anioH&&mmk<=mesH)){var act2=(aa===anioH&&mmk===mesH);if(!act2||hoy.getDate()>=CFG.dia)claves.push(aa+'-'+String(mmk).padStart(2,'0'));mmk++;if(mmk>12){mmk=1;aa++;}}
+  }
+  claves=claves.filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
+  claves.forEach(function(k){var pend=Math.max(0,cuota-(mesesConPago[k]||0));if(pend>0)out.items.push({clave:k,label:mLabel(k),monto:Math.round(pend)});});
+  out.anterior=Math.max(0,Math.round(deudaAnt));
+  return out;
+}
+function copiarTexto(t){
+  try{navigator.clipboard.writeText(t).then(function(){toast('Copiado: '+t);},function(){toast(t);});}
+  catch(e){toast(t);}
+}
+function mPagoOnline(pid,total){
+  var p=C.propietarios.find(function(x){return x.id===pid;});
+  if(!p)return;
+  var d=calcDeudaProp(pid);
+  var hayDatos=PCFG.activo!==false&&(PCFG.alias||PCFG.cbu||PCFG.qr_url);
+  if(!hayDatos){
+    om('<div class="mt">Pagar expensas <button class="btn bo bs" onclick="cm()"><i data-lucide="x"></i></button></div>'
+      +'<div class="al aw">El pago online todavia no esta habilitado. Comunicate con la administracion para coordinar el pago.</div>'
+      +'<button class="btn bo" style="width:100%" onclick="cm()">Entendido</button>');
+    return;
+  }
+  var dg=desgloseDeuda(pid);
+  var rowCss='display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--dark3);border:1px solid #1e1e2a;border-radius:10px;margin-bottom:8px;cursor:pointer';
+  var filas='';
+  if(dg.anterior>0){
+    filas+='<label style="'+rowCss+'"><input type="checkbox" class="pg-cuota" data-monto="'+dg.anterior+'" data-label="Deuda anterior" onchange="pgRecalc()" checked> <span style="flex:1;font-size:13px;font-weight:600">Deuda anterior</span> <span style="font-size:13px;font-weight:700;color:var(--gold)">'+$m(dg.anterior)+'</span></label>';
+  }
+  dg.items.forEach(function(it){
+    filas+='<label style="'+rowCss+'"><input type="checkbox" class="pg-cuota" data-monto="'+it.monto+'" data-label="'+it.label+'" data-clave="'+it.clave+'" onchange="pgRecalc()" checked> <span style="flex:1;font-size:13px;font-weight:600">'+it.label+'</span> <span style="font-size:13px;font-weight:700;color:var(--gold)">'+$m(it.monto)+'</span></label>';
+  });
+  var nSel=dg.items.length+(dg.anterior>0?1:0);
+  var multi=nSel>1;
+  var selector = filas
+    ? '<div style="font-size:12px;font-weight:700;margin-bottom:8px">1 · Eleg\u00ed qu\u00e9 '+(multi?'cuotas':'')+' pagar</div>'
+      +filas
+      +(multi?'<div style="font-size:11px;color:var(--text3);margin:6px 0 14px">Destild\u00e1 lo que no quieras pagar ahora.</div>':'<div style="margin-bottom:14px"></div>')
+    : '';
+  var datoCss='display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #181820';
+  var lblCss='font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px';
+  var valCss='font-size:15px;font-weight:700;letter-spacing:.5px;word-break:break-all';
+  var titHtml=PCFG.titular?'<div style="'+datoCss+'"><div><div style="'+lblCss+'">Titular</div><div style="'+valCss+'">'+PCFG.titular+'</div></div></div>':'';
+  var aliasHtml=PCFG.alias?'<div style="'+datoCss+'"><div><div style="'+lblCss+'">Alias</div><div style="'+valCss+'">'+PCFG.alias+'</div></div><button class="btn bo bs" onclick="copiarTexto(\''+String(PCFG.alias).replace(/'/g,"\\'")+'\')"><i data-lucide="copy"></i> Copiar</button></div>':'';
+  var cbuHtml=PCFG.cbu?'<div style="'+datoCss+'"><div><div style="'+lblCss+'">CBU / CVU</div><div style="'+valCss+'">'+PCFG.cbu+'</div></div><button class="btn bo bs" onclick="copiarTexto(\''+String(PCFG.cbu).replace(/'/g,"\\'")+'\')"><i data-lucide="copy"></i> Copiar</button></div>':'';
+  var qrHtml=PCFG.qr_url?'<div style="text-align:center;margin:12px 0"><img src="'+PCFG.qr_url+'" alt="QR de pago" style="max-width:210px;width:62%;border-radius:12px;background:#fff;padding:8px"></div>':'';
+  var instr=PCFG.instrucciones?'<div class="al ai" style="margin-top:12px">'+PCFG.instrucciones+'</div>':'';
+  om('<div class="mt">Pagar expensas <button class="btn bo bs" onclick="cm()"><i data-lucide="x"></i></button></div>'
+    +'<div style="background:var(--dark3);border-radius:var(--r);padding:12px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--text3)">Tu deuda total</span><span style="font-size:20px;font-weight:800;color:'+(d.total>0?'var(--red)':'var(--green)')+'">'+$m(d.total)+'</span></div>'
+    +selector
+    +'<div class="fg" style="margin-bottom:16px"><label>Monto a transferir ($)</label><input id="pgm" type="number" min="1" value="'+(d.total>0?d.total:'')+'"></div>'
+    +'<div style="font-size:12px;font-weight:700;margin-bottom:8px">'+(filas?'2':'1')+' · Transfer\u00ed o escane\u00e1 a esta cuenta AstroPay</div>'
+    +'<div style="background:var(--dark3);border:1px solid #1e1e2a;border-radius:12px;padding:4px 14px">'+titHtml+aliasHtml+cbuHtml+qrHtml+'</div>'
+    +instr
+    +'<div style="font-size:12px;font-weight:700;margin:16px 0 8px">'+(filas?'3':'2')+' · Cuando termines, tocá el botón</div>'
+    +'<button class="btn bg" id="pgbtn" style="width:100%" onclick="marcarPagado(\''+pid+'\')"><i data-lucide="check-circle-2"></i> Ya pagué</button>'
+    +'<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:10px">Tu pago quedará <b>en revisión</b> hasta que la administración lo confirme. No hace falta enviar comprobante.</div>');
+  if(filas)pgRecalc(); // monto inicial = suma de las cuotas tildadas (coherente con los checkboxes)
+}
+function pgRecalc(){
+  var cbs=document.querySelectorAll('.pg-cuota');var s=0,any=false;
+  cbs.forEach(function(c){any=true;if(c.checked)s+=Number(c.getAttribute('data-monto'))||0;});
+  if(any){var el=document.getElementById('pgm');if(el)el.value=s>0?s:'';}
+}
+function marcarPagado(pid){
+  var m=parseFloat(document.getElementById('pgm').value);
+  if(!(m>0))return toast('Ingres\u00e1 un monto v\u00e1lido');
+  var p=C.propietarios.find(function(x){return x.id===pid;});
+  var sel=[];document.querySelectorAll('.pg-cuota:checked').forEach(function(c){sel.push(c.getAttribute('data-label'));});
+  var detalle=sel.length?sel.join(', '):'Deuda general';
+  var selEls=document.querySelectorAll('.pg-cuota:checked');
+  var claveSel=(selEls.length===1&&selEls[0].getAttribute('data-clave'))?selEls[0].getAttribute('data-clave'):'';
+  var o={id:uid(),propietario_id:pid,consorcio_id:p?p.consorcio_id:null,monto:Math.round(m),periodo:claveSel||(sel.length>1?'varios':ma()),detalle_periodos:detalle,estado:'pendiente',metodo:'transferencia',proveedor:'astropay'};
+  var btn=document.getElementById('pgbtn');if(btn){btn.disabled=true;btn.innerHTML='Registrando...';}
+  dp('pagos',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    if(!C.pagos)C.pagos=[];C.pagos.unshift(o);
+    om('<div class="mt">¡Listo! <button class="btn bo bs" onclick="cm()"><i data-lucide="x"></i></button></div>'
+      +'<div class="al as">Registramos tu aviso de pago por <b>'+$m(o.monto)+'</b>.</div>'
+      +'<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">La administración va a verificar la transferencia en AstroPay y confirmar tu pago. Cuando lo haga, tu deuda se actualiza automáticamente. <b>No hace falta que envíes ningún comprobante.</b></div>'
+      +'<button class="btn bg" style="width:100%" onclick="cm()">Entendido</button>');
+  }).catch(function(e){toast('Error: '+String(e.message).slice(0,90));if(btn){btn.disabled=false;btn.innerHTML='<i data-lucide="check-circle-2"></i> Ya pagué';}});
+}
+
+// ===== Admin: pagos por confirmar (avisos de transferencia a AstroPay) =====
+function updPagosBadge(){
+  var n=(C.pagos||[]).filter(function(x){return x.estado==='pendiente';}).length;
+  var b=document.getElementById('pcb');
+  if(b){b.style.display=n>0?'inline':'none';b.textContent=n;}
+}
+function pgPagosConf(){
+  function P(pid){return C.propietarios.find(function(x){return x.id===pid;});}
+  function nom(pid){var p=P(pid);return p?p.nombre:'—';}
+  function uni(pid){var p=P(pid);return p?(p.piso_dpto||p.unidad||'-'):'-';}
+  function cons(pid){var p=P(pid);if(!p)return '-';var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});return c?c.nombre:'-';}
+  var pend=(C.pagos||[]).filter(function(x){return x.estado==='pendiente';}).sort(function(a,b){return (a.created_at||'')<(b.created_at||'')?1:-1;});
+  var conf=(C.pagos||[]).filter(function(x){return x.estado==='confirmado';}).sort(function(a,b){return (a.created_at||'')<(b.created_at||'')?1:-1;}).slice(0,10);
+  var totalPend=pend.reduce(function(s,x){return s+Number(x.monto||0);},0);
+  var rows=pend.map(function(pg){
+    var fecha=(pg.created_at||'').slice(0,10);
+    return '<tr><td class="p">'+nom(pg.propietario_id)+'</td><td>'+uni(pg.propietario_id)+'</td><td style="color:var(--text3)">'+cons(pg.propietario_id)+'</td><td style="color:var(--green);font-weight:700">'+$m(pg.monto)+'</td><td style="font-size:11px">'+(pg.detalle_periodos||'-')+'</td><td>'+fecha+'</td><td style="white-space:nowrap"><button class="btn bg bs" onclick="confirmarPago(\''+pg.id+'\')"><i data-lucide="check"></i> Confirmar</button> <button class="btn bd bs" onclick="rechazarPago(\''+pg.id+'\')"><i data-lucide="x"></i></button></td></tr>';
+  }).join('');
+  var confRows=conf.map(function(pg){
+    var fecha=(pg.updated_at||pg.created_at||'').slice(0,10);
+    return '<tr><td class="p">'+nom(pg.propietario_id)+'</td><td>'+uni(pg.propietario_id)+'</td><td style="color:var(--green);font-weight:700">'+$m(pg.monto)+'</td><td style="font-size:11px">'+(pg.detalle_periodos||'-')+'</td><td>'+fecha+'</td><td><span class="pill pg">Confirmado</span></td></tr>';
+  }).join('');
+  return '<div class="al ai">Los propietarios pagan por transferencia/QR directo a AstroPay y marcan “Ya pagué”. Verificá en tu app de AstroPay que llegó el dinero y tocá <b>Confirmar</b>: se crea el ingreso y la deuda baja sola.</div>'
+    +'<div class="stat-grid" style="margin-bottom:20px"><div class="stat-card"><div><div class="stat-label">Por confirmar</div><div class="stat-value" style="color:var(--gold)">'+pend.length+'</div></div><div class="stat-icon" style="background:var(--gold-dim);color:var(--gold)"><i data-lucide="badge-check"></i></div></div><div class="stat-card"><div><div class="stat-label">Monto pendiente</div><div class="stat-value" style="color:var(--gold)">'+$m(totalPend)+'</div></div><div class="stat-icon" style="background:var(--gold-dim);color:var(--gold)"><i data-lucide="hourglass"></i></div></div></div>'
+    +'<div class="card" style="margin-bottom:16px"><div class="card-head"><div><div class="card-title">Avisos de pago pendientes</div><div class="card-sub">Confirmá cuando veas el dinero en AstroPay</div></div><button class="btn bo bs" onclick="mPL()">+ Registrar pago recibido</button></div>'+(pend.length?'<div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Consorcio</th><th>Monto</th><th>Cuotas</th><th>Fecha</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty" style="padding:20px">Sin avisos pendientes ✓</div>')+'</div>'
+    +(conf.length?'<div class="card"><div class="card-title" style="margin-bottom:14px">Confirmados recientes</div><div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Monto</th><th>Cuotas</th><th>Fecha</th><th></th></tr></thead><tbody>'+confRows+'</tbody></table></div></div>':'');
+}
+function confirmarPago(id){
+  var pg=(C.pagos||[]).find(function(x){return x.id===id;});
+  if(!pg)return;
+  if(pg.ingreso_id||pg.estado==='confirmado')return toast('Ese pago ya estaba confirmado');
+  var det=(pg.detalle_periodos&&pg.detalle_periodos!=='Deuda general')?(' '+pg.detalle_periodos):'';
+  var ingId=uid();
+  var o={id:ingId,propietario_id:pg.propietario_id,monto:Number(pg.monto),fecha:td(),concepto:'Pago expensa'+det,comprobante:'Transferencia AstroPay',pagado_por:'Propietario — AstroPay'};
+  dp('ingresos',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    C.ingresos.unshift(o);
+    return dpa('pagos',id,{estado:'confirmado',ingreso_id:ingId});
+  }).then(function(){pg.estado='confirmado';pg.ingreso_id=ingId;nav('pagosconf');toast('Pago confirmado ✓ — ingreso creado');}).catch(function(e){toast('Error: '+String(e.message).slice(0,90));});
+}
+function rechazarPago(id){
+  if(!confirm('¿Rechazar este aviso de pago? No se crea ningún ingreso.'))return;
+  var pg=(C.pagos||[]).find(function(x){return x.id===id;});
+  dpa('pagos',id,{estado:'rechazado'}).then(function(r){if(r&&!r.ok)return r.text().then(function(e){throw new Error(e);});if(pg)pg.estado='rechazado';nav('pagosconf');toast('Aviso rechazado');}).catch(function(e){toast('Error: '+String(e.message).slice(0,80));});
+}
+// ===== Admin: configuracion de datos de pago (AstroPay) =====
+var _pcQr=null; // data URI del QR recien elegido (null = mantener el actual)
+function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function pcQrFile(input){
+  var f=input&&input.files&&input.files[0];if(!f)return;
+  if(f.size>400000){toast('Imagen muy grande (máx 400 KB). Bajá la calidad o recortala.');input.value='';return;}
+  var rd=new FileReader();
+  rd.onload=function(){_pcQr=rd.result;var pv=document.getElementById('pc-qrprev');if(pv)pv.innerHTML='<img src="'+_pcQr+'" style="max-width:140px;border-radius:10px;background:#fff;padding:6px">';};
+  rd.readAsDataURL(f);
+}
+function sPCFG(){
+  var o={id:1,alias:(document.getElementById('pc-alias').value||'').trim(),titular:(document.getElementById('pc-tit').value||'').trim(),cbu:(document.getElementById('pc-cbu').value||'').trim(),instrucciones:(document.getElementById('pc-instr').value||'').trim(),activo:document.getElementById('pc-on').value==='1'};
+  if(_pcQr!=null)o.qr_url=_pcQr;
+  _send(SU+'/rest/v1/config_pagos','POST',o,{'Prefer':'resolution=merge-duplicates,return=minimal'}).then(function(r){
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});
+    PCFG=Object.assign(PCFG,o);_pcQr=null;toast('Datos de pago guardados ✓');nav('configuracion');
+  }).catch(function(e){toast('Error: '+String(e.message).slice(0,90));});
+}
+// Al volver del checkout la app recarga limpia: detectamos ?pago=<id>,
+// consultamos el estado (el webhook puede tardar unos segundos) y
+// reabrimos el portal del propietario con el saldo actualizado.
+function autoPortal(pid){
+  CU={tipo:'prop',id:pid,nombre:'Propietario'};
+  document.getElementById('ls').style.display='none';
+  document.getElementById('ma').style.display='flex';
+  Promise.all([
+    sf('propietarios?order=created_at.desc').then(function(d){C.propietarios=d||[];}),
+    sf('consorcios?order=created_at.desc').then(function(d){C.consorcios=d||[];}),
+    sf('gastos?order=created_at.desc').then(function(d){C.gastos=d||[];}),
+    sf('ingresos?order=created_at.desc').then(function(d){C.ingresos=d||[];}),
+    sf('comunicaciones?order=created_at.desc').then(function(d){C.comunicaciones=d||[];}),
+    sf('mensajes?order=created_at.desc').then(function(d){C.mensajes=d||[];})
+  ]).then(function(){var p=C.propietarios.find(function(x){return x.id===pid;});if(p)CU.nombre=p.nombre;showPropPortal(pid);}).catch(function(){});
+}
+function handlePagoReturn(){
+  var qs;try{qs=new URLSearchParams(location.search);}catch(e){return;}
+  var pagoId=qs.get('pago');
+  if(!pagoId)return;
+  try{history.replaceState({},'',location.pathname);}catch(e){}
+  (function check(n){
+    sf('pagos?id=eq.'+encodeURIComponent(pagoId)+'&select=estado,propietario_id').then(function(rows){
+      var pg=rows&&rows[0];
+      if(pg&&pg.estado==='aprobado'){toast('Pago acreditado ✓');autoPortal(pg.propietario_id);}
+      else if(pg&&(pg.estado==='rechazado'||pg.estado==='cancelado')){toast('El pago no se completo. Proba de nuevo.');}
+      else if(n<6){setTimeout(function(){check(n+1);},2000);}
+      else{toast('Pago en proceso: se acreditara en breve.');}
+    }).catch(function(){});
+  })(0);
+}
+try{handlePagoReturn();}catch(e){}
 </script>
 <script>
 if('serviceWorker' in navigator){
