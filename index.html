@@ -694,6 +694,7 @@ var MN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septi
 var COLORES=['#C9A84C','#5DA98C','#6E8FBC','#CE6E77','#C8945F','#9B8BC4'];
 
 try{var _c=localStorage.getItem('pc');if(_c)CFG=JSON.parse(_c);}catch(e){}
+if(!CFG.inicio)CFG.inicio='2026-05'; // primer mes en que se cobran cuotas
 function saveCFG(){try{localStorage.setItem('pc',JSON.stringify(CFG));}catch(e){}}
 
 function mLabel(mes){
@@ -733,6 +734,7 @@ function doLoginP(){
   var e=document.getElementById('lep');
   sf('propietarios?order=created_at.desc').then(function(ps){
     C.propietarios=ps||[];
+    C.propietarios.forEach(function(p){if(!(Number(p.cuota_fija)>0))p.cuota_fija=60000;});
     var prop=C.propietarios.find(function(p){return p.id.slice(-6).toUpperCase()===codigo;});
     if(prop){
       CU={tipo:'prop',id:prop.id,nombre:prop.nombre};
@@ -797,6 +799,8 @@ function initDB(){
   Promise.all(tabs.map(function(t){return sf(t+'?order=created_at.desc').catch(function(){return[];});}))
   .then(function(res){
     tabs.forEach(function(t,i){C[t]=res[i]||[];});
+    // Cuota mensual por defecto (la columna cuota_fija no existe en la base).
+    C.propietarios.forEach(function(p){if(!(Number(p.cuota_fija)>0))p.cuota_fija=60000;});
     document.getElementById('dbs').className='pill pg';
     document.getElementById('dbs').textContent='Conectado';
     loadPCFG();
@@ -844,83 +848,48 @@ function sp2(ps){
 }
 
 // ============================================================
-// calcDeudaProp — CORREGIDO
-// Usa parseFloat con trim() para evitar bugs con espacios en concepto
+// calcDeudaProp — modelo por cuotas mensuales
+//   Deuda = (deuda anterior + cuota × meses vencidos) − pagos ya vencidos
+//   · Una cuota vence pasado el día CFG.dia de su mes.
+//   · Un pago cuenta según el MES de su fecha; un pago fechado en un mes
+//     que todavía no venció (adelanto) no descuenta la deuda vencida.
+//   · Piso en 0: nunca muestra saldo a favor.
 // ============================================================
 function calcDeudaProp(pid){
   var prop=C.propietarios.find(function(x){return x.id===pid;});
+  if(!prop) return {total:0,intereses:0,saldo:0};
   var regs=C.ingresos.filter(function(i){return i.propietario_id===pid;});
-  var deudaAnt=0,cuotasEmit=0,pagados=0;
-  var mesesConPago={};
-  var mesesEmitidos={};
-
+  var CUOTA=Number(prop.cuota_fija)||60000;
+  var INICIO=(CFG&&CFG.inicio)||'2026-05';
+  // Arranca en INICIO, pero nunca antes del primer mes con registros de la unidad
+  // (para no inventar deuda a unidades que ingresaron después).
+  var firstRec=null;
+  regs.forEach(function(i){var m=(i.fecha||'').slice(0,7);if(m&&(!firstRec||m<firstRec))firstRec=m;});
+  var start=(firstRec&&firstRec>INICIO)?firstRec:INICIO;
+  // Contar meses vencidos desde 'start' hasta hoy.
+  var hoy=new Date(),Y=hoy.getFullYear(),Mo=hoy.getMonth()+1,Da=hoy.getDate();
+  var pa=parseInt(start.split('-')[0],10),pm=parseInt(start.split('-')[1],10);
+  var nVenc=0,ultVenc='';
+  while(pa<Y||(pa===Y&&pm<=Mo)){
+    var esActual=(pa===Y&&pm===Mo);
+    if(!esActual||Da>=CFG.dia){nVenc++;ultVenc=pa+'-'+String(pm).padStart(2,'0');}
+    pm++;if(pm>12){pm=1;pa++;}
+  }
+  var saldoAnt=0,pagos=0;
   regs.forEach(function(i){
     var con=(i.concepto||'').trim();
     if(con.indexOf('SALDO_ANTERIOR:')===0){
-      var val=parseFloat(con.replace('SALDO_ANTERIOR:','').trim());
-      if(!isNaN(val)&&val>0) deudaAnt+=val;
+      var v=parseFloat(con.replace('SALDO_ANTERIOR:','').trim());
+      if(!isNaN(v)&&v>0) saldoAnt+=v;
     } else if(con.indexOf('CUOTA_EMITIDA:')===0){
-      var val2=parseFloat(con.replace('CUOTA_EMITIDA:','').trim());
-      if(!isNaN(val2)&&val2>0) cuotasEmit+=val2;
-      if(i.fecha) mesesEmitidos[i.fecha.slice(0,7)]=true;
+      /* legacy: las cuotas ahora se generan por mes; se ignora para no duplicar */
     } else if(Number(i.monto)>0&&i.pagado_por!=='Sistema'){
-      pagados+=Number(i.monto);
-      if(i.fecha){
-        var mes=i.fecha.slice(0,7);
-        mesesConPago[mes]=(mesesConPago[mes]||0)+Number(i.monto);
-      }
+      var mp=(i.fecha||'').slice(0,7);
+      if(mp&&ultVenc&&mp<=ultVenc) pagos+=Number(i.monto);
     }
   });
-
-  var saldo=0;
-  if(cuotasEmit>0){
-    var cuotaFija=Number(prop&&prop.cuota_fija)||60000;
-    var cuotasAuto=0;
-    var clavesEmit=Object.keys(mesesEmitidos).sort();
-    if(clavesEmit.length>0){
-      var ult=clavesEmit[clavesEmit.length-1].split('-');
-      var hoy2=new Date();
-      var anioH=hoy2.getFullYear(),mesH=hoy2.getMonth()+1;
-      var aC=parseInt(ult[0]),mC=parseInt(ult[1])+1;
-      if(mC>12){mC=1;aC++;}
-      while(aC<anioH||(aC===anioH&&mC<=mesH)){
-        var esMesActual=(aC===anioH&&mC===mesH);
-        if(!esMesActual||hoy2.getDate()>=CFG.dia){
-          cuotasAuto+=cuotaFija;
-        }
-        mC++;if(mC>12){mC=1;aC++;}
-      }
-    }
-    saldo=Math.max(0,deudaAnt+cuotasEmit+cuotasAuto-pagados);
-  } else if(prop){
-    var cuota=Number(prop.cuota_fija)||60000;
-    var hoy2b=new Date();
-    var anioHb=hoy2b.getFullYear(),mesHb=hoy2b.getMonth()+1;
-    var pagosReales=regs.filter(function(i){
-      return Number(i.monto)>0&&i.pagado_por!=='Sistema'&&i.fecha;
-    }).sort(function(a,b){return a.fecha>b.fecha?1:-1;});
-    var aD2,mD2;
-    if(pagosReales.length>0){
-      var ultp=pagosReales[pagosReales.length-1].fecha.split('-');
-      aD2=parseInt(ultp[0]);mD2=parseInt(ultp[1])+1;
-      if(mD2>12){mD2=1;aD2++;}
-    } else {
-      aD2=anioHb;mD2=mesHb;
-    }
-    var deudaCuotas=0;
-    var aCb=aD2,mCb=mD2;
-    while(aCb<anioHb||(aCb===anioHb&&mCb<=mesHb)){
-      var esMesActualb=(aCb===anioHb&&mCb===mesHb);
-      if(!esMesActualb||hoy2b.getDate()>=CFG.dia){
-        var claveM=aCb+'-'+String(mCb).padStart(2,'0');
-        var pagadoM=mesesConPago[claveM]||0;
-        if(pagadoM<cuota) deudaCuotas+=(cuota-pagadoM);
-      }
-      mCb++;if(mCb>12){mCb=1;aCb++;}
-    }
-  var saldoAntRestante=Math.max(0,deudaAnt-pagados);
-    saldo=saldoAntRestante+deudaCuotas;
-  }
+  var cargos=saldoAnt+CUOTA*nVenc;
+  var saldo=Math.max(0,cargos-pagos);
   var it=CFG.on&&dom()>=CFG.dia&&saldo>0?Math.round(saldo*(CFG.tasa/100)):0;
   return {total:Math.round(saldo+it),intereses:it,saldo:Math.round(saldo)};
 }
@@ -1688,32 +1657,46 @@ function verMovimientos(pid){
   if(!p)return;
   var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});
   var regs=C.ingresos.filter(function(i){return i.propietario_id===pid;});
-  var movs=[];
+  var CUOTA=Number(p.cuota_fija)||60000;
+  var INICIO=(CFG&&CFG.inicio)||'2026-05';
+  var firstRec=null;
+  regs.forEach(function(i){var m=(i.fecha||'').slice(0,7);if(m&&(!firstRec||m<firstRec))firstRec=m;});
+  var start=(firstRec&&firstRec>INICIO)?firstRec:INICIO;
+  var hoy=new Date(),Y=hoy.getFullYear(),Mo=hoy.getMonth()+1,Da=hoy.getDate();
+  var dueList=[],pa=parseInt(start.split('-')[0],10),pm=parseInt(start.split('-')[1],10);
+  while(pa<Y||(pa===Y&&pm<=Mo)){var esA=(pa===Y&&pm===Mo);if(!esA||Da>=CFG.dia)dueList.push(pa+'-'+String(pm).padStart(2,'0'));pm++;if(pm>12){pm=1;pa++;}}
+  var ultVenc=dueList.length?dueList[dueList.length-1]:'';
+  var movs=[],adelantos=0;
   regs.forEach(function(i){
     var con=(i.concepto||'').trim();
     if(con.indexOf('SALDO_ANTERIOR:')===0){
       var v=parseFloat(con.replace('SALDO_ANTERIOR:','').trim())||0;
-      if(v>0)movs.push({fecha:i.fecha||'',desc:'Saldo anterior'+(i.comprobante?' — '+i.comprobante:''),cargo:v,pago:0});
+      if(v>0)movs.push({fecha:(i.fecha||(start+'-01')),desc:'Deuda anterior'+(i.comprobante?' — '+i.comprobante:''),cargo:v,pago:0});
     } else if(con.indexOf('CUOTA_EMITIDA:')===0){
-      var v2=parseFloat(con.replace('CUOTA_EMITIDA:','').trim())||0;
-      if(v2>0)movs.push({fecha:i.fecha||'',desc:'Cuota emitida'+(i.comprobante?' — '+i.comprobante:''),cargo:v2,pago:0});
+      /* legacy: ignorado (las cuotas se generan por mes) */
     } else if(Number(i.monto)>0&&i.pagado_por!=='Sistema'){
-      movs.push({fecha:i.fecha||'',desc:(i.concepto||'Pago')+(i.comprobante?' (Comp. '+i.comprobante+')':'')+(i.pagado_por?' · '+i.pagado_por:''),cargo:0,pago:Number(i.monto)});
+      var mp=(i.fecha||'').slice(0,7);
+      var extra=(i.pagado_por&&i.pagado_por!=='Propietario')?(' · '+i.pagado_por):'';
+      if(mp&&ultVenc&&mp<=ultVenc) movs.push({fecha:i.fecha||'',desc:(i.concepto||'Pago')+extra,cargo:0,pago:Number(i.monto)});
+      else adelantos+=Number(i.monto);
     }
   });
+  dueList.forEach(function(m){movs.push({fecha:m+'-01',desc:'Cuota '+mLabel(m),cargo:CUOTA,pago:0});});
   movs.sort(function(a,b){return (a.fecha||'')>(b.fecha||'')?1:((a.fecha||'')<(b.fecha||'')?-1:0);});
   var saldo=0,totalCargos=0,totalPagos=0;
   var rows=movs.map(function(mv){
     saldo+=mv.cargo-mv.pago;totalCargos+=mv.cargo;totalPagos+=mv.pago;
-    return '<tr><td style="white-space:nowrap">'+(mv.fecha||'-')+'</td><td class="p">'+mv.desc+'</td><td style="color:var(--orange);text-align:right;white-space:nowrap">'+(mv.cargo>0?$m(mv.cargo):'-')+'</td><td style="color:var(--green);text-align:right;white-space:nowrap">'+(mv.pago>0?$m(mv.pago):'-')+'</td><td style="text-align:right;font-weight:700;white-space:nowrap;color:'+(saldo>0?'var(--red)':'var(--green)')+'">'+$m(saldo)+'</td></tr>';
+    var sMost=Math.max(0,saldo);
+    return '<tr><td style="white-space:nowrap">'+(mv.fecha||'-')+'</td><td class="p">'+mv.desc+'</td><td style="color:var(--orange);text-align:right;white-space:nowrap">'+(mv.cargo>0?$m(mv.cargo):'-')+'</td><td style="color:var(--green);text-align:right;white-space:nowrap">'+(mv.pago>0?$m(mv.pago):'-')+'</td><td style="text-align:right;font-weight:700;white-space:nowrap;color:'+(sMost>0?'var(--red)':'var(--green)')+'">'+$m(sMost)+'</td></tr>';
   }).join('');
   var d=calcDeudaProp(pid);
   var tabla=movs.length?'<div style="overflow-x:auto"><table><thead><tr><th>Fecha</th><th>Concepto</th><th style="text-align:right">Cargo</th><th style="text-align:right">Pago</th><th style="text-align:right">Saldo</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty" style="padding:24px">Sin movimientos registrados</div>';
+  var adelH=adelantos>0?'<div class="al ai" style="margin-top:12px">Pagos adelantados (meses aún no vencidos): '+$m(adelantos)+'. Se aplicarán al vencer cada mes.</div>':'';
   om('<div class="mt">Movimientos — '+p.nombre+' <button class="btn bo bs" onclick="cm()"><i data-lucide="x"></i></button></div>'
-    +'<div style="background:var(--dark3);border-radius:var(--r);padding:12px 14px;margin-bottom:14px"><div style="font-size:11px;color:var(--text3)">Consorcio · Unidad · Cuota</div><div style="font-size:14px;font-weight:600;margin-top:3px">'+(c?c.nombre:'-')+' — '+(p.piso_dpto||p.unidad||'-')+' · '+$m(Number(p.cuota_fija||0))+'</div></div>'
+    +'<div style="background:var(--dark3);border-radius:var(--r);padding:12px 14px;margin-bottom:14px"><div style="font-size:11px;color:var(--text3)">Consorcio · Unidad · Cuota</div><div style="font-size:14px;font-weight:600;margin-top:3px">'+(c?c.nombre:'-')+' — '+(p.piso_dpto||p.unidad||'-')+' · '+$m(CUOTA)+'/mes</div></div>'
     +'<div class="stat-grid" style="margin-bottom:14px"><div style="background:var(--dark3);border-radius:var(--r);padding:12px;border:1px solid #1e1e2a"><div class="stat-label">Total cargos</div><div class="stat-value" style="color:var(--orange);font-size:16px">'+$m(totalCargos)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:12px;border:1px solid #1e1e2a"><div class="stat-label">Total pagado</div><div class="stat-value" style="color:var(--green);font-size:16px">'+$m(totalPagos)+'</div></div><div style="background:var(--dark3);border-radius:var(--r);padding:12px;border:1px solid #1e1e2a"><div class="stat-label">Deuda actual</div><div class="stat-value" style="color:'+(d.total>0?'var(--red)':'var(--green)')+';font-size:16px">'+(d.total>0?$m(d.total):'Al dia')+'</div></div></div>'
-    +tabla
-    +'<div style="font-size:11px;color:var(--text3);margin-top:12px;line-height:1.5">El saldo de la tabla refleja los movimientos registrados. La "Deuda actual" puede incluir cuotas del mes en curso e intereses por mora calculados automaticamente.</div>');
+    +tabla+adelH
+    +'<div style="font-size:11px;color:var(--text3);margin-top:12px;line-height:1.5">Cada mes suma una cuota como cargo (vence pasado el día '+CFG.dia+'). Los pagos se imputan al mes de su fecha. La deuda no muestra saldo a favor.</div>');
 }
 
 // ===== CALENDARIO =====
