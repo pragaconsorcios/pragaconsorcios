@@ -1478,8 +1478,13 @@ function descargarLiqPDF(){
   if(!el)return toast('Abrí o generá una liquidación primero');
   toast('Generando PDF…');
   loadPdfLibs().then(function(){
-    var bg=getComputedStyle(document.body).backgroundColor||'#090A0D';
-    return html2canvas(el,{scale:2,backgroundColor:bg,useCORS:true,windowWidth:el.scrollWidth});
+    return html2canvas(el,{scale:2,backgroundColor:'#0D0D0F',useCORS:true,windowWidth:el.scrollWidth,onclone:function(doc){
+      // El clon reinicia las animaciones de entrada (opacity:0). Las desactivamos
+      // y forzamos visibilidad para que la captura salga con el diseño completo.
+      var st=doc.createElement('style');
+      st.textContent='*{animation:none!important;-webkit-animation:none!important;transition:none!important;opacity:1!important;transform:none!important}';
+      (doc.head||doc.body).appendChild(st);
+    }});
   }).then(function(canvas){
     var img=canvas.toDataURL('image/png');
     var jsPDF=window.jspdf.jsPDF;
