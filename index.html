@@ -1885,34 +1885,39 @@ function eMsgP(pid){var asunto=document.getElementById('msg-asunto').value.trim(
 // admin confirma con 1 clic (crea el ingreso y baja la deuda sola).
 // Desglosa la deuda por periodo para que el propietario elija que cuota pagar.
 function desgloseDeuda(pid){
+  // Desglose para elegir qué pagar. Coherente con calcDeudaProp: la suma de
+  // (anterior + items) == deuda (saldo). Cada pago salda su propio mes; el
+  // excedente y los pagos sueltos se aplican a lo más viejo (deuda anterior → meses).
   var prop=C.propietarios.find(function(x){return x.id===pid;});
   var out={items:[],anterior:0};
   if(!prop)return out;
   var regs=C.ingresos.filter(function(i){return i.propietario_id===pid;});
-  var deudaAnt=0,cuotasEmit=0;
-  var mesesConPago={},mesesEmitidos={};
+  var CUOTA=Number(prop.cuota_fija)||60000;
+  var INICIO=(CFG&&CFG.inicio)||'2026-05';
+  var firstRec=null;
+  regs.forEach(function(i){var m=(i.fecha||'').slice(0,7);if(m&&(!firstRec||m<firstRec))firstRec=m;});
+  var start=(firstRec&&firstRec>INICIO)?firstRec:INICIO;
+  var hoy=new Date(),Y=hoy.getFullYear(),Mo=hoy.getMonth()+1,Da=hoy.getDate();
+  var dueList=[],pa=parseInt(start.split('-')[0],10),pm=parseInt(start.split('-')[1],10);
+  while(pa<Y||(pa===Y&&pm<=Mo)){var esA=(pa===Y&&pm===Mo);if(!esA||Da>=CFG.dia)dueList.push(pa+'-'+String(pm).padStart(2,'0'));pm++;if(pm>12){pm=1;pa++;}}
+  var ultVenc=dueList.length?dueList[dueList.length-1]:'';
+  var saldoAnt=0,paidByMonth={},pool=0;
   regs.forEach(function(i){
     var con=(i.concepto||'').trim();
-    if(con.indexOf('SALDO_ANTERIOR:')===0){var v=parseFloat(con.replace('SALDO_ANTERIOR:','').trim());if(!isNaN(v)&&v>0)deudaAnt+=v;}
-    else if(con.indexOf('CUOTA_EMITIDA:')===0){var v2=parseFloat(con.replace('CUOTA_EMITIDA:','').trim());if(!isNaN(v2)&&v2>0)cuotasEmit+=v2;if(i.fecha)mesesEmitidos[i.fecha.slice(0,7)]=true;}
-    else if(Number(i.monto)>0&&i.pagado_por!=='Sistema'&&i.fecha){var mes=i.fecha.slice(0,7);mesesConPago[mes]=(mesesConPago[mes]||0)+Number(i.monto);}
+    if(con.indexOf('SALDO_ANTERIOR:')===0){var v=parseFloat(con.replace('SALDO_ANTERIOR:','').trim());if(!isNaN(v)&&v>0)saldoAnt+=v;}
+    else if(con.indexOf('CUOTA_EMITIDA:')===0){/* ignorado */}
+    else if(Number(i.monto)>0&&i.pagado_por!=='Sistema'){
+      var mp=(i.fecha||'').slice(0,7);
+      if(mp&&ultVenc&&mp<=ultVenc){ if(dueList.indexOf(mp)>=0) paidByMonth[mp]=(paidByMonth[mp]||0)+Number(i.monto); else pool+=Number(i.monto); }
+    }
   });
-  var cuota=Number(prop.cuota_fija)||60000;
-  var hoy=new Date();var anioH=hoy.getFullYear(),mesH=hoy.getMonth()+1;
-  var claves=[];
-  if(cuotasEmit>0){
-    var ce=Object.keys(mesesEmitidos).sort();
-    ce.forEach(function(k){claves.push(k);});
-    if(ce.length){var u=ce[ce.length-1].split('-');var aC=parseInt(u[0]),mC=parseInt(u[1])+1;if(mC>12){mC=1;aC++;}
-      while(aC<anioH||(aC===anioH&&mC<=mesH)){var act=(aC===anioH&&mC===mesH);if(!act||hoy.getDate()>=CFG.dia)claves.push(aC+'-'+String(mC).padStart(2,'0'));mC++;if(mC>12){mC=1;aC++;}}}
-  } else {
-    var pr=regs.filter(function(i){return Number(i.monto)>0&&i.pagado_por!=='Sistema'&&i.fecha;}).sort(function(a,b){return a.fecha>b.fecha?1:-1;});
-    var aD,mD;if(pr.length){var up=pr[pr.length-1].fecha.split('-');aD=parseInt(up[0]);mD=parseInt(up[1])+1;if(mD>12){mD=1;aD++;}}else{aD=anioH;mD=mesH;}
-    var aa=aD,mmk=mD;while(aa<anioH||(aa===anioH&&mmk<=mesH)){var act2=(aa===anioH&&mmk===mesH);if(!act2||hoy.getDate()>=CFG.dia)claves.push(aa+'-'+String(mmk).padStart(2,'0'));mmk++;if(mmk>12){mmk=1;aa++;}}
-  }
-  claves=claves.filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
-  claves.forEach(function(k){var pend=Math.max(0,cuota-(mesesConPago[k]||0));if(pend>0)out.items.push({clave:k,label:mLabel(k),monto:Math.round(pend)});});
-  out.anterior=Math.max(0,Math.round(deudaAnt));
+  var rem={};
+  dueList.forEach(function(m){var r=CUOTA-(paidByMonth[m]||0);if(r<0){pool+=(-r);r=0;}rem[m]=r;});
+  var remAnt=saldoAnt;
+  if(pool>0&&remAnt>0){var t=Math.min(pool,remAnt);remAnt-=t;pool-=t;}
+  for(var k=0;k<dueList.length&&pool>0;k++){var mm=dueList[k];var t2=Math.min(pool,rem[mm]);rem[mm]-=t2;pool-=t2;}
+  out.anterior=Math.round(Math.max(0,remAnt));
+  dueList.forEach(function(m){if(rem[m]>0)out.items.push({clave:m,label:mLabel(m),monto:Math.round(rem[m])});});
   return out;
 }
 function copiarTexto(t){
