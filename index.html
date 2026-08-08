@@ -1386,6 +1386,7 @@ function periodOptions(){
 }
 /* Render reutilizable del detalle (lo usan generar y ver-guardada) */
 function liqDetailHTML(d,saved){
+  LIQ_PDF_NAME='Liquidacion_'+String(d.nombre||'consorcio').replace(/[^\w]+/g,'_')+'_'+String(d.mL||d.periodo||'').replace(/[^\w]+/g,'_')+'.pdf';
   // Estado de caja (saldo acumulado). Si la liquidación es vieja y no lo tiene guardado, se recalcula.
   var cajaAcum=d.cajaAcum, cajaLabel=d.cajaLabel;
   if(cajaAcum===undefined&&d.consorcio_id&&d.periodo){
@@ -1438,7 +1439,7 @@ function genLiq(){
   var d=buildLiqData(cid,mes);
   LAST_LIQ={consorcio_id:cid,periodo:mes,data:d,total_ingresos:d.tI,total_ordinarios:d.tO,total_extraordinarios:d.tE,saldo:d.saldo};
   var yaExiste=C.liquidaciones.some(function(l){return l.consorcio_id===cid&&l.periodo===mes;});
-  document.getElementById('lr').innerHTML='<div class="page-actions" style="margin-bottom:12px">'+(yaExiste?'<span class="pill po">Ya hay una guardada de '+d.mL+'</span>':'')+'<button class="btn bo" onclick="printLiq()"><i data-lucide="printer"></i> Imprimir</button><button class="btn bg" onclick="guardarLiq()"><i data-lucide="save"></i> '+(yaExiste?'Reemplazar guardada':'Guardar liquidación')+'</button></div>'+liqDetailHTML(d,false);
+  document.getElementById('lr').innerHTML='<div class="page-actions" style="margin-bottom:12px">'+(yaExiste?'<span class="pill po">Ya hay una guardada de '+d.mL+'</span>':'')+'<button class="btn bo" onclick="descargarLiqPDF()"><i data-lucide="download"></i> Descargar PDF</button><button class="btn bg" onclick="guardarLiq()"><i data-lucide="save"></i> '+(yaExiste?'Reemplazar guardada':'Guardar liquidación')+'</button></div>'+liqDetailHTML(d,false);
   if(window.lucide)lucide.createIcons();
   document.getElementById('lr').scrollIntoView({block:'start'});
 }
@@ -1457,12 +1458,41 @@ function guardarLiq(){
 }
 function verLiq(id){
   var l=C.liquidaciones.find(function(x){return x.id===id;});if(!l)return;
-  document.getElementById('lr').innerHTML='<div class="page-actions" style="margin-bottom:12px"><span class="pill pg">Guardada · '+mLabel(l.periodo)+'</span><button class="btn bo" onclick="printLiq()"><i data-lucide="printer"></i> Descargar PDF</button></div>'+liqDetailHTML(l.data,true);
+  document.getElementById('lr').innerHTML='<div class="page-actions" style="margin-bottom:12px"><span class="pill pg">Guardada · '+mLabel(l.periodo)+'</span><button class="btn bo" onclick="descargarLiqPDF()"><i data-lucide="download"></i> Descargar PDF</button></div>'+liqDetailHTML(l.data,true);
   if(window.lucide)lucide.createIcons();
   document.getElementById('lr').scrollIntoView({block:'start'});
 }
-function pdfLiq(id){verLiq(id);setTimeout(function(){window.print();},350);}
-function printLiq(){window.print();}
+var LIQ_PDF_NAME='Liquidacion.pdf';
+// Carga on-demand de las librerías de PDF (solo al primer uso).
+function loadPdfLibs(){
+  if(window.html2canvas&&window.jspdf)return Promise.resolve();
+  function load(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=function(){res();};s.onerror=function(){rej(new Error('No se pudo cargar la librería PDF (¿sin internet?)'));};document.head.appendChild(s);});}
+  var chain=Promise.resolve();
+  if(!window.html2canvas)chain=chain.then(function(){return load('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');});
+  if(!window.jspdf)chain=chain.then(function(){return load('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');});
+  return chain;
+}
+// Captura la liquidación con el diseño real de la plataforma y la baja como PDF.
+function descargarLiqPDF(){
+  var el=document.getElementById('liq-print');
+  if(!el)return toast('Abrí o generá una liquidación primero');
+  toast('Generando PDF…');
+  loadPdfLibs().then(function(){
+    var bg=getComputedStyle(document.body).backgroundColor||'#090A0D';
+    return html2canvas(el,{scale:2,backgroundColor:bg,useCORS:true,windowWidth:el.scrollWidth});
+  }).then(function(canvas){
+    var img=canvas.toDataURL('image/png');
+    var jsPDF=window.jspdf.jsPDF;
+    var pdf=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
+    var pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight();
+    var imgH=canvas.height*(pw/canvas.width),heightLeft=imgH,y=0;
+    pdf.addImage(img,'PNG',0,y,pw,imgH,'','FAST');heightLeft-=ph;
+    while(heightLeft>0){y=heightLeft-imgH;pdf.addPage();pdf.addImage(img,'PNG',0,y,pw,imgH,'','FAST');heightLeft-=ph;}
+    pdf.save(LIQ_PDF_NAME);toast('PDF descargado ✓');
+  }).catch(function(e){toast('Error al generar PDF: '+String(e&&e.message||e).slice(0,60));});
+}
+function pdfLiq(id){verLiq(id);setTimeout(descargarLiqPDF,450);}
+function printLiq(){descargarLiqPDF();}
 function delLiq(id){
   var l=C.liquidaciones.find(function(x){return x.id===id;});if(!l)return;
   if(!confirm('¿Eliminar la liquidación de '+mLabel(l.periodo)+'? Esta acción no se puede deshacer.'))return;
