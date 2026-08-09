@@ -1,7 +1,7 @@
 // Service Worker — Praga Consorcios
 // Estrategia: network-first para la app (siempre lo más nuevo si hay internet),
 // con copia en caché como respaldo para uso sin conexión.
-var CACHE = 'praga-v10';
+var CACHE = 'praga-v11';
 var ASSETS = ['./', './index.html', './manifest.json', './praga.jpg', './praga.jpg?v=3'];
 
 self.addEventListener('install', function (e) {

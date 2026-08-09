@@ -1488,11 +1488,12 @@ function descargarLiqPDF(){
   }).then(function(canvas){
     var img=canvas.toDataURL('image/png');
     var jsPDF=window.jspdf.jsPDF;
-    var pdf=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
-    var pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight();
-    var imgH=canvas.height*(pw/canvas.width),heightLeft=imgH,y=0;
-    pdf.addImage(img,'PNG',0,y,pw,imgH,'','FAST');heightLeft-=ph;
-    while(heightLeft>0){y=heightLeft-imgH;pdf.addPage();pdf.addImage(img,'PNG',0,y,pw,imgH,'','FAST');heightLeft-=ph;}
+    // Una sola página del alto exacto del contenido (ancho A4): entra todo,
+    // sin páginas colgadas, y se adapta al largo de cada liquidación.
+    var pw=595.28; // ancho A4 en pt
+    var imgH=canvas.height*(pw/canvas.width);
+    var pdf=new jsPDF({orientation:'portrait',unit:'pt',format:[pw,imgH]});
+    pdf.addImage(img,'PNG',0,0,pw,imgH,'','FAST');
     pdf.save(LIQ_PDF_NAME);toast('PDF descargado ✓');
   }).catch(function(e){toast('Error al generar PDF: '+String(e&&e.message||e).slice(0,60));});
 }
