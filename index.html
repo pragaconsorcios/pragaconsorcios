@@ -2117,9 +2117,9 @@ function pgPagosConf(){
   }).join('');
   var confRows=conf.map(function(pg){
     var fecha=(pg.updated_at||pg.created_at||'').slice(0,10);
-    return '<tr><td class="p">'+nom(pg.propietario_id)+'</td><td>'+uni(pg.propietario_id)+'</td><td style="color:var(--green);font-weight:700">'+$m(pg.monto)+'</td><td style="font-size:11px">'+(pg.detalle_periodos||'-')+'</td><td>'+fecha+'</td><td><span class="pill pg">Confirmado</span></td></tr>';
+    return '<tr><td class="p">'+nom(pg.propietario_id)+'</td><td>'+uni(pg.propietario_id)+'</td><td style="color:var(--green);font-weight:700">'+$m(pg.monto)+'</td><td style="font-size:11px">'+(pg.detalle_periodos||'-')+'</td><td>'+fecha+'</td><td style="white-space:nowrap"><span class="pill pg">Confirmado</span> <button class="btn bd bs" onclick="eliminarPago(\''+pg.id+'\')" title="Eliminar pago e ingreso"><i data-lucide="trash-2"></i></button></td></tr>';
   }).join('');
-  return '<div class="al ai">Los pagos con <b>Mercado Pago</b> se acreditan <b>solos</b> cuando el propietario termina de pagar (se crea el ingreso y la deuda baja automáticamente). Acá quedan los <b>intentos de pago</b>: si alguno figura pendiente (el propietario abrió el checkout pero no volvió), tocá <b>Verificar en MP</b> — solo se crea el ingreso si Mercado Pago confirma que se pagó.</div>'
+  return '<div class="al ai"><span>Los pagos de <b>Mercado Pago</b> se acreditan <b>solos</b>: cuando el propietario termina de pagar, se crea el ingreso y la deuda baja. Acá quedan los <b>intentos de pago</b>; si alguno figura pendiente (abrió el checkout pero no volvió), tocá <b>Verificar en MP</b>.</span></div>'
     +'<div class="stat-grid" style="margin-bottom:20px"><div class="stat-card"><div><div class="stat-label">Por confirmar</div><div class="stat-value" style="color:var(--gold)">'+pend.length+'</div></div><div class="stat-icon" style="background:var(--gold-dim);color:var(--gold)"><i data-lucide="badge-check"></i></div></div><div class="stat-card"><div><div class="stat-label">Monto pendiente</div><div class="stat-value" style="color:var(--gold)">'+$m(totalPend)+'</div></div><div class="stat-icon" style="background:var(--gold-dim);color:var(--gold)"><i data-lucide="hourglass"></i></div></div></div>'
     +'<div class="card" style="margin-bottom:16px"><div class="card-head"><div><div class="card-title">Intentos de pago pendientes</div><div class="card-sub">Se acreditan solos; verificá en MP solo si quedó colgado</div></div></div>'+(pend.length?'<div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Consorcio</th><th>Monto</th><th>Cuotas</th><th>Fecha</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty" style="padding:20px">Sin pagos pendientes ✓</div>')+'</div>'
     +(conf.length?'<div class="card"><div class="card-title" style="margin-bottom:14px">Confirmados recientes</div><div style="overflow-x:auto"><table><thead><tr><th>Propietario</th><th>Unidad</th><th>Monto</th><th>Cuotas</th><th>Fecha</th><th></th></tr></thead><tbody>'+confRows+'</tbody></table></div></div>':'');
@@ -2143,6 +2143,19 @@ function rechazarPago(id){
   if(!confirm('¿Descartar este intento de pago? No se crea ningún ingreso.'))return;
   var pg=(C.pagos||[]).find(function(x){return x.id===id;});
   dpa('pagos',id,{estado:'rechazado'}).then(function(r){if(r&&!r.ok)return r.text().then(function(e){throw new Error(e);});if(pg)pg.estado='rechazado';nav('pagosconf');toast('Aviso rechazado');}).catch(function(e){toast('Error: '+String(e.message).slice(0,80));});
+}
+function eliminarPago(id){
+  var pg=(C.pagos||[]).find(function(x){return x.id===id;});
+  if(!pg)return;
+  if(!confirm('¿Eliminar este pago? Si tiene un ingreso asociado, también se borra (la deuda vuelve a subir).'))return;
+  var ingId=pg.ingreso_id;
+  var del=function(tabla,rid){return fetch(SU+'/rest/v1/'+tabla+'?id=eq.'+encodeURIComponent(rid),{method:'DELETE',headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'}});};
+  var chain=Promise.resolve();
+  if(ingId)chain=del('ingresos',ingId).then(function(r){if(r.ok||r.status===204)C.ingresos=(C.ingresos||[]).filter(function(x){return x.id!==ingId;});});
+  chain.then(function(){return del('pagos',id);}).then(function(r){
+    if(r&&(r.ok||r.status===204)){C.pagos=(C.pagos||[]).filter(function(x){return x.id!==id;});nav('pagosconf');toast('Pago eliminado');}
+    else return r.text().then(function(e){throw new Error(e);});
+  }).catch(function(e){toast('Error: '+String(e.message).slice(0,90));});
 }
 // ===== Admin: configuracion de datos de pago (AstroPay) =====
 var _pcQr=null; // data URI del QR recien elegido (null = mantener el actual)

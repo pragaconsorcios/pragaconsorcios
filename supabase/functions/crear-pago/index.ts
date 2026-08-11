@@ -53,12 +53,13 @@ Deno.serve(async (req) => {
     const pagoId = uid();
     const backUrl = APP_URL + (APP_URL.includes("?") ? "&" : "?") + "pago=" + pagoId;
 
+    // No se fija payer.email: deja que pague quien esté logueado en MP.
+    // (Si se fija un email real, el sandbox tira "una de las partes es de prueba".)
     const prefBody: Record<string, unknown> = {
       items: [{ title: "Expensas — " + (prop.nombre || "propietario"), quantity: 1, currency_id: "ARS", unit_price: montoNum }],
       external_reference: pagoId,
       back_urls: { success: backUrl, failure: backUrl, pending: backUrl },
       auto_return: "approved",
-      ...(prop.email ? { payer: { email: prop.email } } : {}),
     };
 
     const r = await fetch(MP + "/checkout/preferences", {
