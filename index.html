@@ -2099,7 +2099,7 @@ function preguntarIA(){
   IA_HIST.push({rol:'assistant',texto:'…'});
   iaRender();
   var btn=document.getElementById('ia-send');if(btn)btn.disabled=true;
-  fetch(FN+'/ASISTENTE-IA',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contexto:buildContextIA(),mensajes:IA_HIST.filter(function(m){return m.texto!=='…';})})})
+  fetch(FN+'/ASISTENTE-IA',{method:'POST',headers:{'Content-Type':'application/json','apikey':SK,'Authorization':'Bearer '+SK},body:JSON.stringify({contexto:buildContextIA(),mensajes:IA_HIST.filter(function(m){return m.texto!=='…';})})})
     .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;});})
     .then(function(j){IA_HIST[IA_HIST.length-1]={rol:'assistant',texto:j.respuesta||'(sin respuesta)'};iaRender();})
     .catch(function(e){
