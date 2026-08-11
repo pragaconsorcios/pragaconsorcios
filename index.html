@@ -629,6 +629,7 @@ tr:hover td{background:rgba(255,255,255,.025)!important}
     <nav class="nav">
       <div class="ns">Principal</div>
       <div class="ni active" onclick="nav('dashboard')"><span class="ni-icon"><i data-lucide="layout-dashboard"></i></span>Dashboard</div>
+      <div class="ni" onclick="abrirAsistenteIA()"><span class="ni-icon"><i data-lucide="sparkles"></i></span>Asistente IA</div>
       <div class="ni" onclick="nav('caja')"><span class="ni-icon"><i data-lucide="wallet"></i></span>Estado de Caja</div>
       <div class="ni" onclick="nav('cajaadmin')"><span class="ni-icon"><i data-lucide="briefcase"></i></span>Caja Administración</div>
       <div class="ni" onclick="nav('calendario')"><span class="ni-icon"><i data-lucide="calendar-days"></i></span>Calendario</div>
@@ -2052,6 +2053,61 @@ function updPagosBadge(){
   var n=(C.pagos||[]).filter(function(x){return x.estado==='pendiente';}).length;
   var b=document.getElementById('pcb');
   if(b){b.style.display=n>0?'inline':'none';b.textContent=n;}
+}
+
+// ===== Asistente IA (consultas sobre los datos, via Edge Function + Claude) =====
+var IA_HIST=[];
+function buildContextIA(){
+  var CUOTA=60000;
+  var deudores=C.propietarios.map(function(p){
+    var d=calcDeudaProp(p.id);
+    var c=C.consorcios.find(function(x){return x.id===p.consorcio_id;});
+    return {unidad:(p.piso_dpto||p.unidad||'-').trim(),nombre:p.nombre,consorcio:c?c.nombre:'-',telefono:p.telefono||'',email:p.email||'',deuda:d.total,interes:d.intereses};
+  }).sort(function(a,b){return b.deuda-a.deuda;});
+  var caja=calcCajaTotal();
+  var gastos=C.gastos.slice().sort(function(a,b){return (a.fecha||'')<(b.fecha||'')?1:-1;}).slice(0,30).map(function(g){var c=C.consorcios.find(function(x){return x.id===g.consorcio_id;});return {fecha:g.fecha,desc:g.descripcion,proveedor:g.proveedor||'',categoria:g.categoria||g.tipo_gasto||'',consorcio:c?c.nombre:'-',monto:Number(g.monto)};});
+  var pagos=C.ingresos.filter(function(i){return Number(i.monto)>0&&i.pagado_por!=='Sistema';}).sort(function(a,b){return (a.fecha||'')<(b.fecha||'')?1:-1;}).slice(0,30).map(function(i){var p=C.propietarios.find(function(x){return x.id===i.propietario_id;});return {fecha:i.fecha,unidad:p?(p.piso_dpto||p.unidad||'-').trim():'-',nombre:p?p.nombre:'-',monto:Number(i.monto),concepto:i.concepto||''};});
+  return JSON.stringify({
+    hoy:td(), cuota_mensual:CUOTA, dia_vencimiento:CFG.dia, mes_inicio_cuotas:CFG.inicio,
+    interes_mora:{activo:CFG.on,tasa_pct:CFG.tasa},
+    consorcios:C.consorcios.map(function(c){return {nombre:c.nombre,direccion:c.direccion||''};}),
+    caja_total:{ingresos:caja.ingresos,gastos:caja.gastos,saldo:caja.saldo},
+    resumen:{unidades:C.propietarios.length,morosos:deudores.filter(function(d){return d.deuda>0;}).length,deuda_total:deudores.reduce(function(s,d){return s+d.deuda;},0)},
+    unidades:deudores, gastos_recientes:gastos, pagos_recientes:pagos
+  });
+}
+function iaEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function iaBubble(m){
+  var esU=m.rol==='user';
+  return '<div style="display:flex;justify-content:'+(esU?'flex-end':'flex-start')+';margin-bottom:8px"><div style="max-width:82%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.5;white-space:pre-wrap;background:'+(esU?'var(--gold-dim);border:1px solid rgba(201,168,76,.25)':'var(--dark3);border:1px solid #1e1e2a')+'">'+iaEsc(m.texto)+'</div></div>';
+}
+var IA_VACIO='<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px 10px">Pregunta lo que quieras sobre deudas, gastos, caja o morosos.<br><br>Ej: «¿Quién debe más?» · «¿Cuánto gasté en limpieza?» · «Redactá un aviso para los morosos».</div>';
+function iaRender(){var el=document.getElementById('ia-msgs');if(!el)return;el.innerHTML=IA_HIST.length?IA_HIST.map(iaBubble).join(''):IA_VACIO;el.scrollTop=el.scrollHeight;}
+function abrirAsistenteIA(){
+  om('<div class="mt"><i data-lucide="sparkles"></i> Asistente IA <button class="btn bo bs" onclick="cm()"><i data-lucide="x"></i></button></div>'
+    +'<div id="ia-msgs" style="max-height:52vh;overflow-y:auto;padding:4px 2px;margin-bottom:12px">'+(IA_HIST.length?IA_HIST.map(iaBubble).join(''):IA_VACIO)+'</div>'
+    +'<div style="display:flex;gap:8px"><input id="ia-input" placeholder="Escribí tu pregunta…" style="flex:1" onkeydown="if(event.key===\'Enter\')preguntarIA()"><button class="btn bg" id="ia-send" onclick="preguntarIA()"><i data-lucide="send"></i></button></div>'
+    +'<div style="font-size:10px;color:var(--text3);margin-top:8px">Usa tus datos actuales. Revisá siempre antes de enviar un mensaje a un propietario.</div>');
+  setTimeout(function(){var i=document.getElementById('ia-input');if(i)i.focus();},60);
+  setTimeout(iaRender,60);
+}
+function preguntarIA(){
+  var inp=document.getElementById('ia-input');if(!inp)return;
+  var q=(inp.value||'').trim();if(!q)return;
+  inp.value='';
+  IA_HIST.push({rol:'user',texto:q});
+  IA_HIST.push({rol:'assistant',texto:'…'});
+  iaRender();
+  var btn=document.getElementById('ia-send');if(btn)btn.disabled=true;
+  fetch(FN+'/asistente-ia',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contexto:buildContextIA(),mensajes:IA_HIST.filter(function(m){return m.texto!=='…';})})})
+    .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;});})
+    .then(function(j){IA_HIST[IA_HIST.length-1]={rol:'assistant',texto:j.respuesta||'(sin respuesta)'};iaRender();})
+    .catch(function(e){
+      var msg=String(e.message||e);
+      if(msg.indexOf('404')>=0||/not.?found|Failed to fetch/i.test(msg)) msg='El asistente todavía no está habilitado (falta desplegar la función y cargar la API key de Anthropic).';
+      IA_HIST[IA_HIST.length-1]={rol:'assistant',texto:'⚠️ '+msg};iaRender();
+    })
+    .finally(function(){var b=document.getElementById('ia-send');if(b)b.disabled=false;var i=document.getElementById('ia-input');if(i)i.focus();});
 }
 function pgPagosConf(){
   function P(pid){return C.propietarios.find(function(x){return x.id===pid;});}
