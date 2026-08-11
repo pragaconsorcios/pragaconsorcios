@@ -1516,7 +1516,7 @@ function comprobantePago(id){
   var row=function(l,v){return '<div style="display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid #1e1e2a"><span style="color:#8a8a93;font-size:13px">'+l+'</span><span style="color:#fff;font-size:13px;font-weight:600;text-align:right">'+v+'</span></div>';};
   var html='<div id="cbp-print" style="width:600px;box-sizing:border-box;background:#0D0D0F;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:40px">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">'
-      +'<div><div style="font-size:20px;font-weight:800;letter-spacing:1px">PRAGA <span style="color:#C9A84C">CONSORCIOS</span></div><div style="font-size:12px;color:#8a8a93;margin-top:2px">Administración de consorcios</div></div>'
+      +'<div style="display:flex;align-items:center;gap:12px"><img src="praga.jpg?v=3" alt="Praga" style="width:54px;height:54px;object-fit:contain;border-radius:12px"><div><div style="font-size:20px;font-weight:800;letter-spacing:1px">PRAGA <span style="color:#C9A84C">CONSORCIOS</span></div><div style="font-size:12px;color:#8a8a93;margin-top:2px">Administración de consorcios</div></div></div>'
       +'<div style="text-align:right"><div style="font-size:11px;color:#8a8a93;text-transform:uppercase;letter-spacing:1px">Comprobante</div><div style="font-size:11px;color:#8a8a93">N° '+op+'</div></div>'
     +'</div>'
     +'<div style="background:#16161c;border:1px solid #1e1e2a;border-radius:14px;padding:24px;margin-bottom:20px">'
@@ -1530,7 +1530,9 @@ function comprobantePago(id){
   var host=document.createElement('div');
   host.style.cssText='position:fixed;left:-9999px;top:0;z-index:-1';
   host.innerHTML=html;document.body.appendChild(host);
-  loadPdfLibs().then(function(){
+  var lg=host.querySelector('img');
+  var ready=new Promise(function(res){if(!lg||lg.complete)return res();lg.onload=function(){res();};lg.onerror=function(){res();};});
+  ready.then(loadPdfLibs).then(function(){
     return html2canvas(host.firstChild,{scale:2,backgroundColor:'#0D0D0F',useCORS:true,windowWidth:600});
   }).then(function(canvas){
     var img=canvas.toDataURL('image/png');var jsPDF=window.jspdf.jsPDF;
