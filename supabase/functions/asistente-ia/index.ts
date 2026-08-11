@@ -8,8 +8,20 @@
 //
 // Entrada (POST JSON): { contexto: string(JSON), mensajes: [{rol, texto}] }
 // Salida: { respuesta: string }
+// (Self-contained: sin imports, para poder desplegar pegando el código.)
 // ============================================================
-import { corsHeaders, json } from "../_shared/util.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 // Modelo por defecto: Haiku 4.5 (rápido y barato). Cambiable con el
@@ -41,7 +53,6 @@ Deno.serve(async (req) => {
 
     if (!mensajes.length) return json({ error: "Sin mensajes" }, 400);
 
-    // Mapear la conversación al formato de la API.
     const apiMessages = mensajes.map((m: any) => ({
       role: m.rol === "assistant" ? "assistant" : "user",
       content: String(m.texto || "").slice(0, 4000),
@@ -71,7 +82,6 @@ Deno.serve(async (req) => {
       return json({ error: "IA: " + msg }, 502);
     }
 
-    // Concatenar los bloques de texto de la respuesta.
     const texto = Array.isArray(data?.content)
       ? data.content.filter((b: any) => b?.type === "text").map((b: any) => b.text).join("\n").trim()
       : "";
