@@ -2114,11 +2114,44 @@ function buildContextIA(){
   });
 }
 function iaEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function iaBubble(m){
+function iaNorm(s){return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[°º]/g,'').replace(/\s+/g,' ').trim();}
+// Instrucción que habilita a la IA a PROPONER cargas (el admin confirma con un botón).
+var IA_ACCIONES='\n\nACCIONES (registrar datos):\nAdemás de responder consultas, podés REGISTRAR un gasto o un ingreso/pago SOLO cuando el admin te lo pida explícitamente. Si te falta el monto o de quién/qué consorcio se trata, NO registres: preguntá. Cuando tengas todo, respondé UNA frase breve confirmando qué vas a cargar y al FINAL agregá EXACTAMENTE un bloque <<<ACCION>>>{json}<<<FIN>>> (sin texto después).\nGASTO -> {"tipo":"gasto","consorcio":"<nombre exacto del consorcio de los datos>","descripcion":"<texto>","monto":<numero sin puntos ni $>,"categoria":"<opcional>","proveedor":"<opcional>","fecha":"YYYY-MM-DD opcional"}\nINGRESO/PAGO -> {"tipo":"ingreso","unidad":"<unidad o nombre exacto del propietario>","monto":<numero>,"concepto":"<opcional, ej Expensa mensual>","fecha":"YYYY-MM-DD opcional"}\nNunca uses el bloque para consultas, solo para registrar.';
+function iaBubble(m,i){
   var esU=m.rol==='user';
-  return '<div style="display:flex;justify-content:'+(esU?'flex-end':'flex-start')+';margin-bottom:8px"><div style="max-width:82%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.5;white-space:pre-wrap;background:'+(esU?'var(--gold-dim);border:1px solid rgba(201,168,76,.25)':'var(--dark3);border:1px solid #1e1e2a')+'">'+iaEsc(m.texto)+'</div></div>';
+  var a=m.accion,extra='';
+  if(a&&!a.__done){
+    var det=a.tipo==='gasto'
+      ?'<b>Gasto</b> · '+iaEsc(a.consorcio||'-')+'<br>'+iaEsc(a.descripcion||'-')+(a.proveedor?' · '+iaEsc(a.proveedor):'')+'<br><b>'+$m(Number(a.monto)||0)+'</b>'
+      :'<b>Ingreso</b> · '+iaEsc(a.unidad||a.nombre||'-')+'<br>'+iaEsc(a.concepto||'Expensa mensual')+'<br><b>'+$m(Number(a.monto)||0)+'</b>';
+    extra='<div style="margin-top:8px;background:var(--dark2);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:10px 12px"><div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px">'+det+'</div><div style="display:flex;gap:6px"><button class="btn bg bs" onclick="iaEjecutarAccion('+i+')"><i data-lucide="check"></i> Confirmar y cargar</button><button class="btn bo bs" onclick="iaCancelarAccion('+i+')">Cancelar</button></div></div>';
+  }else if(a&&a.__done){
+    extra='<div style="margin-top:6px;font-size:12px;color:'+(a.__ok?'var(--green)':'var(--text3)')+'">'+(a.__ok?'✓ ':'')+iaEsc(a.__msg||'')+'</div>';
+  }
+  return '<div style="display:flex;justify-content:'+(esU?'flex-end':'flex-start')+';margin-bottom:8px"><div style="max-width:82%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.5;white-space:pre-wrap;background:'+(esU?'var(--gold-dim);border:1px solid rgba(201,168,76,.25)':'var(--dark3);border:1px solid #1e1e2a')+'">'+iaEsc(m.texto)+extra+'</div></div>';
 }
-var IA_VACIO='<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px 10px">Pregunta lo que quieras sobre deudas, gastos, caja o morosos.<br><br>Ej: «¿Quién debe más?» · «¿Cuánto gasté en limpieza?» · «Redactá un aviso para los morosos».</div>';
+function iaEjecutarAccion(i){
+  var m=IA_HIST[i];if(!m||!m.accion||m.accion.__done)return;
+  var a=m.accion,monto=Number(a.monto);
+  if(!(monto>0))return toast('Monto inválido en la acción');
+  var done=function(ok,msg){a.__done=true;a.__ok=ok;a.__msg=msg;iaRender();if(window.lucide)try{lucide.createIcons();}catch(e){}};
+  if(a.tipo==='gasto'){
+    var key=iaNorm(a.consorcio);
+    var c=C.consorcios.find(function(x){return iaNorm(x.nombre)===key;})||C.consorcios.find(function(x){return key&&iaNorm(x.nombre).indexOf(key)>=0;});
+    if(!c)return toast('No encontré el consorcio "'+(a.consorcio||'')+'"');
+    var g={id:uid(),descripcion:a.descripcion||'Gasto',consorcio_id:c.id,monto:monto,fecha:a.fecha||td(),tipo_gasto:a.categoria||'',categoria:a.categoria||'',proveedor:a.proveedor||''};
+    dp('gastos',g).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});C.gastos.unshift(g);done(true,'Gasto de '+$m(monto)+' cargado en '+c.nombre);toast('Gasto cargado ✓');}).catch(function(e){toast('Error: '+String(e.message).slice(0,80));});
+  }else{
+    var k=iaNorm(a.unidad||a.nombre||'');
+    var p=C.propietarios.find(function(x){return iaNorm(x.piso_dpto||x.unidad||'')===k||iaNorm(x.nombre)===k;})
+        ||C.propietarios.find(function(x){return k&&(iaNorm(x.nombre).indexOf(k)>=0||iaNorm(x.piso_dpto||x.unidad||'').indexOf(k)>=0);});
+    if(!p)return toast('No encontré la unidad/propietario "'+(a.unidad||a.nombre||'')+'"');
+    var o={id:uid(),propietario_id:p.id,monto:monto,fecha:a.fecha||td(),concepto:a.concepto||'Expensa mensual',comprobante:'',pagado_por:'Propietario'};
+    dp('ingresos',o).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});C.ingresos.unshift(o);done(true,'Ingreso de '+$m(monto)+' cargado a '+p.nombre);toast('Ingreso cargado ✓');}).catch(function(e){toast('Error: '+String(e.message).slice(0,80));});
+  }
+}
+function iaCancelarAccion(i){var m=IA_HIST[i];if(m&&m.accion&&!m.accion.__done){m.accion.__done=true;m.accion.__ok=false;m.accion.__msg='Cancelado';iaRender();}}
+var IA_VACIO='<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px 10px">Preguntá sobre deudas, gastos, caja o morosos — o pedime que <b>cargue</b> un gasto o un pago.<br><br>Ej: «¿Quién debe más?» · «¿Cuánto gasté en limpieza?» · «Cargá un gasto de $8000 de plomería en Génova» · «Registrá un pago de $60000 de PAULA».</div>';
 function iaRender(){var el=document.getElementById('ia-msgs');if(!el)return;el.innerHTML=IA_HIST.length?IA_HIST.map(iaBubble).join(''):IA_VACIO;el.scrollTop=el.scrollHeight;}
 function abrirAsistenteIA(){
   om('<div class="mt"><i data-lucide="sparkles"></i> Asistente IA <button class="btn bo bs" onclick="cm()"><i data-lucide="x"></i></button></div>'
@@ -2136,9 +2169,14 @@ function preguntarIA(){
   IA_HIST.push({rol:'assistant',texto:'…'});
   iaRender();
   var btn=document.getElementById('ia-send');if(btn)btn.disabled=true;
-  fetch(FN+'/ASISTENTE-IA',{method:'POST',headers:{'Content-Type':'application/json','apikey':SK,'Authorization':'Bearer '+SK},body:JSON.stringify({contexto:buildContextIA(),mensajes:IA_HIST.filter(function(m){return m.texto!=='…';})})})
+  fetch(FN+'/ASISTENTE-IA',{method:'POST',headers:{'Content-Type':'application/json','apikey':SK,'Authorization':'Bearer '+SK},body:JSON.stringify({contexto:buildContextIA()+IA_ACCIONES,mensajes:IA_HIST.filter(function(m){return m.texto!=='…';})})})
     .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;});})
-    .then(function(j){IA_HIST[IA_HIST.length-1]={rol:'assistant',texto:j.respuesta||'(sin respuesta)'};iaRender();})
+    .then(function(j){
+      var texto=j.respuesta||'(sin respuesta)',accion=null;
+      var mm=texto.match(/<<<ACCION>>>([\s\S]*?)<<<FIN>>>/);
+      if(mm){try{accion=JSON.parse(mm[1].trim());}catch(e){accion=null;}texto=texto.replace(mm[0],'').trim()||'Te preparo esta carga para que confirmes:';}
+      IA_HIST[IA_HIST.length-1]={rol:'assistant',texto:texto,accion:accion};iaRender();if(window.lucide)try{lucide.createIcons();}catch(e){}
+    })
     .catch(function(e){
       var msg=String(e.message||e);
       if(msg.indexOf('404')>=0||/not.?found|Failed to fetch/i.test(msg)) msg='El asistente todavía no está habilitado (falta desplegar la función y cargar la API key de Anthropic).';
