@@ -2283,9 +2283,11 @@ if('serviceWorker' in navigator){
     function pick(i){sel.selectedIndex=i;sel.dispatchEvent(new Event('change',{bubbles:true}));syncLabel();close();}
     function pos(){var r=trig.getBoundingClientRect();dd.style.left=r.left+'px';dd.style.width=r.width+'px';dd.style.top=(r.bottom+6)+'px';var below=window.innerHeight-r.bottom-16;dd.style.maxHeight=Math.max(160,Math.min(320,below))+'px';}
     var open=false;
-    function openDD(){if(open)return;build('');if(search)search.value='';dd.style.display='flex';pos();open=true;trig.setAttribute('data-open','true');if(window.lucide)try{lucide.createIcons();}catch(e){}if(search)setTimeout(function(){search.focus();},10);setTimeout(function(){document.addEventListener('mousedown',out,true);},0);window.addEventListener('scroll',close,true);window.addEventListener('resize',close);}
-    function close(){if(!open)return;dd.style.display='none';open=false;trig.removeAttribute('data-open');document.removeEventListener('mousedown',out,true);window.removeEventListener('scroll',close,true);window.removeEventListener('resize',close);}
+    function openDD(){if(open)return;build('');if(search)search.value='';dd.style.display='flex';pos();open=true;trig.setAttribute('data-open','true');if(window.lucide)try{lucide.createIcons();}catch(e){}if(search)setTimeout(function(){search.focus();},10);setTimeout(function(){document.addEventListener('mousedown',out,true);},0);window.addEventListener('scroll',onScroll,true);window.addEventListener('resize',close);}
+    function close(){if(!open)return;dd.style.display='none';open=false;trig.removeAttribute('data-open');document.removeEventListener('mousedown',out,true);window.removeEventListener('scroll',onScroll,true);window.removeEventListener('resize',close);}
     function out(e){if(!dd.contains(e.target)&&!trig.contains(e.target))close();}
+    // Cerrar SOLO si el scroll es de la página (no de la lista interna del dropdown).
+    function onScroll(e){if(e&&e.target&&e.target.nodeType===1&&dd.contains(e.target))return;close();}
     trig.addEventListener('click',function(e){e.preventDefault();open?close():openDD();});
     if(search){search.addEventListener('input',function(){build(search.value);});search.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();var f=list.querySelector('.select-option');if(f)f.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}));}else if(e.key==='Escape'){close();}});}
     sel.addEventListener('change',syncLabel);
